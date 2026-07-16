@@ -1,0 +1,15 @@
+{
+  "Data": {
+    "Count": 1,
+    "Posts": [{
+      "PostId": "123",
+      "RecruitPostName": "软件开发实习生",
+      "LocationName": "深圳",
+      "BGName": "示例事业群",
+      "CategoryName": "技术",
+      "Responsibility": "参与后端服务开发",
+      "LastUpdateTime": "2026年07月16日",
+      "PostURL": "http://careers.tencent.com/jobdesc.html?postId=123"
+    }]
+  }
+}
