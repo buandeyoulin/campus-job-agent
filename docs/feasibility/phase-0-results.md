@@ -4,14 +4,14 @@ This report contains sanitized capability results only. It excludes credentials,
 
 | Probe | Status | Summary | Checked At |
 |---|---|---|---|
-| tencent | PASS | Tencent public API returned jobs | 2026-07-16T11:04:49.850Z |
-| offerbiu | FAIL | OfferBiu public page exposes no usable job records | 2026-07-16T11:04:50.060Z |
-| codex | PASS | codex returned schema-valid JSON | 2026-07-16T11:04:59.798Z |
-| openai-compatible | SKIP | openai-compatible environment configuration is missing | 2026-07-16T11:04:59.798Z |
-| ollama | SKIP | ollama environment configuration is missing | 2026-07-16T11:04:59.798Z |
-| pdf-output | PASS | Chinese PDF text layer is extractable | 2026-07-16T11:05:00.770Z |
-| resume-pdf | PASS | PDF resume parsing completed | 2026-07-16T11:05:00.781Z |
-| resume-docx | PASS | DOCX resume parsing completed | 2026-07-16T11:05:00.826Z |
+| tencent | PASS | Tencent public API returned jobs | 2026-07-16T11:10:14.285Z |
+| offerbiu | FAIL | OfferBiu public source is not usable for automatic collection | 2026-07-16T11:10:14.482Z |
+| codex | PASS | codex returned schema-valid JSON | 2026-07-16T11:10:26.639Z |
+| openai-compatible | SKIP | openai-compatible environment configuration is missing | 2026-07-16T11:10:26.639Z |
+| ollama | SKIP | ollama environment configuration is missing | 2026-07-16T11:10:26.639Z |
+| pdf-output | PASS | Chinese PDF text layer is extractable | 2026-07-16T11:10:27.654Z |
+| resume-pdf | PASS | PDF resume parsing completed | 2026-07-16T11:10:27.667Z |
+| resume-docx | PASS | DOCX resume parsing completed | 2026-07-16T11:10:27.715Z |
 
 ## Interpretation
 

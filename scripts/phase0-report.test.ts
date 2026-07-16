@@ -10,7 +10,7 @@ describe("Phase 0 report", () => {
       { name: "offerbiu", status: "fail", summary: "no public records", details: { publicJobCount: 0 }, checkedAt: "2026-07-16T00:00:00.000Z" }
     ]);
     expect(report).toContain("| tencent | PASS | jobs returned |");
-    expect(report).toContain("| offerbiu | FAIL | no public records |");
+    expect(report).toContain("| offerbiu | FAIL | OfferBiu public source is not usable for automatic collection |");
     expect(report).not.toMatch(/api.?key|authorization|secret/i);
   });
 
@@ -27,6 +27,18 @@ describe("Phase 0 report", () => {
     const next = formatPhase0Report([
       { name: "tencent", status: "pass", summary: "jobs returned", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
     ]);
+    expect(shouldUpdateTrackedReport(previous, next)).toBe(false);
+  });
+
+  it("keeps the informational OfferBiu failure stable across diagnostic reasons", () => {
+    const previous = formatPhase0Report([
+      { name: "offerbiu", status: "fail", summary: "OfferBiu public page could not be inspected", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
+    ]);
+    const next = formatPhase0Report([
+      { name: "offerbiu", status: "fail", summary: "OfferBiu public page exposes no usable job records", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
+    ]);
+
+    expect(previous).toContain("OfferBiu public source is not usable for automatic collection");
     expect(shouldUpdateTrackedReport(previous, next)).toBe(false);
   });
 
