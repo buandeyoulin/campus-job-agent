@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-16
 
-**Status:** Approved in conversation; written review pending
+**Status:** Approved
 
 **Parent design:** `docs/superpowers/specs/2026-07-16-campus-job-agent-design.md`
 
@@ -58,7 +58,7 @@ This is portable but does not satisfy the user's request to use their existing C
 ```ts
 interface CodexProviderOptions {
   workingDirectory: string;
-  client?: CodexClient;
+  run?: CodexRun;
 }
 
 class CodexProvider implements StructuredAiProvider {
@@ -69,7 +69,7 @@ class CodexProvider implements StructuredAiProvider {
 The provider will:
 
 1. Convert the request's Zod schema with Zod 4 `toJSONSchema(..., { target: "draft-07" })`.
-2. Start a fresh Codex thread with `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, and a dedicated working directory.
+2. Start a fresh Codex thread with `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`, and a dedicated working directory.
 3. Combine the system instruction and user prompt into one explicit content-only task.
 4. Pass the JSON schema as the SDK `outputSchema` option.
 5. Parse the SDK `finalResponse` with the existing `parseStructured` helper so Zod remains the final trust boundary.
@@ -84,7 +84,7 @@ new Codex({
 })
 ```
 
-The provider will not resume threads. Disabling history persistence prevents prompts and responses from being added to Codex's local session history. The dedicated working directory will be `.local/codex-runtime`, initialized as an empty Git repository by the Phase 0 runner and ignored by Git. Codex therefore cannot read the application source tree or user-data directory through its working-directory context.
+The provider will not resume threads. Disabling history persistence prevents prompts and responses from being added to Codex's local session history. The dedicated working directory will be `.local/phase0/codex-runtime`, initialized as an empty Git repository by the Phase 0 runner and ignored by Git. Codex therefore does not receive the application source tree or user-data directory as its working-directory context. The read-only sandbox prevents writes, while the prompt explicitly forbids file inspection and command execution; this is a mitigation rather than a claim that the SDK has no read-capable tools.
 
 ## Data Flow
 
@@ -111,15 +111,14 @@ The probe runner will add a `codex` probe and change provider requirements:
 
 The Codex live probe asks only for `{ "ok": true }` and contains no resume or personal data. It must return schema-valid JSON using saved authentication before Phase 0 is complete.
 
-If the SDK cannot authenticate, the probe returns a sanitized failure. The application then instructs the local user to complete `codex login`; it never reads, copies, or persists authentication files itself.
+If the SDK cannot authenticate, the probe returns a sanitized failure. The application then instructs the local user to complete `npm exec -- codex login`; it never reads, copies, or persists authentication files itself.
 
 ## Error Handling
 
-- SDK executable or spawn failure: `Codex runtime could not start`.
-- Missing/expired authentication: `Codex authentication is unavailable` when distinguishable from SDK output; otherwise a generic structured-generation failure.
+- SDK executable, authentication, spawn, or turn failure: `Codex runtime could not complete structured generation`. The adapter does not expose or parse the SDK's raw error text; authentication diagnosis uses the separate `codex login status` command.
 - Empty final response: `Codex response contained no final content`.
 - Invalid JSON: existing `AI provider returned invalid JSON` error.
-- Schema mismatch: Zod validation error, with no raw response copied into the message.
+- Schema mismatch: `AI provider returned schema-invalid JSON`, with no raw response copied into the message.
 
 Errors and reports must not include prompt bodies, resume content, response bodies, tokens, environment values, or filesystem paths outside the project.
 
@@ -136,7 +135,7 @@ Errors and reports must not include prompt bodies, resume content, response bodi
 ### Live probe
 
 - Install the pinned SDK dependency.
-- Create the ignored empty `.local/codex-runtime` Git directory.
+- Create the ignored empty `.local/phase0/codex-runtime` Git directory.
 - Run one schema-only request with no personal data.
 - Record only PASS/FAIL and a sanitized summary in the Phase 0 report.
 
