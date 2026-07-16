@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Document, Packer, Paragraph } from "docx";
 import { z } from "zod";
@@ -7,7 +7,7 @@ import type { ProbeResult } from "@campus-job-agent/contracts";
 import { renderHtmlToPdf } from "@campus-job-agent/materials";
 import { parseResume } from "@campus-job-agent/profile";
 import { probeOfferBiu, probeTencent } from "@campus-job-agent/sources";
-import { formatPhase0Report } from "./phase0-report.js";
+import { formatPhase0Report, shouldUpdateTrackedReport } from "./phase0-report.js";
 
 const localDir = path.resolve(".local/phase0");
 const checkedAt = () => new Date().toISOString();
@@ -56,7 +56,17 @@ try {
 
 await writeFile(path.join(localDir, "results.json"), JSON.stringify(results, null, 2), "utf8");
 await mkdir(path.resolve("docs/feasibility"), { recursive: true });
-await writeFile(path.resolve("docs/feasibility/phase-0-results.md"), formatPhase0Report(results), "utf8");
+const trackedReportPath = path.resolve("docs/feasibility/phase-0-results.md");
+const nextReport = formatPhase0Report(results);
+let previousReport: string | null = null;
+try {
+  previousReport = await readFile(trackedReportPath, "utf8");
+} catch (error) {
+  if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+}
+if (shouldUpdateTrackedReport(previousReport, nextReport)) {
+  await writeFile(trackedReportPath, nextReport, "utf8");
+}
 
 const required = new Set(["tencent", "openai-compatible", "ollama", "pdf-output", "resume-pdf", "resume-docx"]);
 const failedRequired = results.filter((result) => required.has(result.name) && result.status !== "pass");
