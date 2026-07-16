@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-16
 
-**Status:** Approved in conversation; written review pending
+**Status:** Approved
 
 **Parent design:** `docs/superpowers/specs/2026-07-16-campus-job-agent-design.md`
 
@@ -236,7 +236,7 @@ multipart upload
 - Original file names are stored for display but never used as filesystem paths.
 - Final files use generated UUID names below the configured user-data root.
 - Empty parsed text is a parse failure, not a successful empty resume.
-- A repeated SHA-256 upload returns the existing upload record instead of creating duplicate files.
+- A repeated SHA-256 upload reactivates and returns the existing upload record instead of creating duplicate files.
 
 ### 8.2 Codex input
 
@@ -268,7 +268,7 @@ Codex runtime failures receive at most two automatic retries with bounded expone
 
 `POST /api/resumes/:id/extract` returns `202 Accepted` after marking the upload queued. A small in-process job runner performs parsing and extraction because this is a one-user local application.
 
-Progress is persisted through `parse_status` and `extraction_status`. On server startup, records left in parsing or extracting are marked failed with `interrupted` and become retryable. The server does not silently resume an incomplete model call.
+Progress is persisted through `parse_status` and `extraction_status`. On server startup, records left queued, parsing, or extracting are marked failed with `interrupted` and become retryable. The server does not silently resume incomplete work.
 
 Browser refreshes read persisted status from `GET /api/onboarding`. The first implementation may poll while work is active; streaming progress is not required in this slice.
 
