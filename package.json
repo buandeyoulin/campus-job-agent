@@ -11,6 +11,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
+    "phase0": "tsx scripts/run-phase0.mts",
     "verify": "npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
