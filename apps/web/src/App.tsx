@@ -3,6 +3,8 @@ import type { OnboardingSnapshot } from "@campus-job-agent/contracts";
 import { browserOnboardingApi, type OnboardingApi } from "./api";
 import { PreferencesCard } from "./components/PreferencesCard";
 import { ProfileCard } from "./components/ProfileCard";
+import { ResumePanel } from "./components/ResumePanel";
+import { FactsPanel } from "./components/FactsPanel";
 
 const MISSING_LABELS: Record<string, string> = {
   "profile.name": "姓名或称呼",
@@ -29,7 +31,6 @@ export function App({ api = browserOnboardingApi }: AppProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reload, setReload] = useState(0);
-  const [manualReady, setManualReady] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -49,6 +50,28 @@ export function App({ api = browserOnboardingApi }: AppProps) {
     );
     return () => { current = false; };
   }, [api, reload]);
+
+  const activeResume = snapshot?.activeResume ?? null;
+  const polling = Boolean(activeResume && (
+    activeResume.extractionStatus === "queued"
+    || activeResume.parseStatus === "parsing"
+    || activeResume.extractionStatus === "extracting"
+  ));
+  useEffect(() => {
+    if (!polling) return;
+    let current = true;
+    let requesting = false;
+    const timer = window.setInterval(() => {
+      if (requesting) return;
+      requesting = true;
+      void api.getSnapshot().then((next) => {
+        if (current) setSnapshot(next);
+      }).catch(() => {
+        // Keep the last durable snapshot; the next tick can recover a transient read failure.
+      }).finally(() => { requesting = false; });
+    }, 1_000);
+    return () => { current = false; window.clearInterval(timer); };
+  }, [api, activeResume?.id, activeResume?.parseStatus, activeResume?.extractionStatus, polling]);
 
   if (loading) {
     return <main className="state-page"><p role="status">正在读取本地资料…</p></main>;
@@ -128,17 +151,19 @@ export function App({ api = browserOnboardingApi }: AppProps) {
             disabled={!profileExists}
             onSave={async (value) => setSnapshot(await api.savePreferences(value))}
           />
-          <section className="card facts-card" aria-labelledby="facts-title">
-            <div className="card-heading">
-              <div>
-                <p className="eyebrow">第三步</p>
-                <h2 id="facts-title">核心经历</h2>
-              </div>
-              <button type="button" className="secondary-button" onClick={() => setManualReady(true)}>添加经历</button>
-            </div>
-            {totalFacts === 0 && <p className="empty-copy">还没有经历事实。可以手动添加，也可以在下一步从简历中提取。</p>}
-            {manualReady && <p className="inline-hint" role="status">已准备手动添加经历。</p>}
-          </section>
+          <ResumePanel
+            activeResume={snapshot.activeResume}
+            profileExists={profileExists}
+            api={api}
+            onSnapshot={setSnapshot}
+            onRefresh={async () => setSnapshot(await api.getSnapshot())}
+          />
+          <FactsPanel
+            facts={snapshot.facts}
+            counts={snapshot.factCounts}
+            api={api}
+            onRefresh={async () => setSnapshot(await api.getSnapshot())}
+          />
         </main>
       </div>
     </div>
