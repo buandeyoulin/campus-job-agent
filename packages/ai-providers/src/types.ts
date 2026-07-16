@@ -5,7 +5,14 @@ export interface StructuredAiProvider { generate<T>(request: StructuredRequest<T
 
 export function parseStructured<T>(content: string, schema: z.ZodType<T>): T {
   let json: unknown;
-  try { json = JSON.parse(content); }
-  catch { throw new Error("AI provider returned invalid JSON"); }
-  return schema.parse(json);
+  try {
+    json = JSON.parse(content);
+  } catch {
+    throw new Error("AI provider returned invalid JSON");
+  }
+  try {
+    return schema.parse(json);
+  } catch {
+    throw new Error("AI provider returned schema-invalid JSON");
+  }
 }
