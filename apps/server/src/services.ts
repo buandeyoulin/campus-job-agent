@@ -1,0 +1,69 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { CodexProvider, ensureCodexRuntimeDirectory } from "@campus-job-agent/ai-providers";
+import { parseResume } from "@campus-job-agent/profile";
+import {
+  FactRepository,
+  openDatabase,
+  ProfileRepository,
+  resolveDataPaths,
+  ResumeRepository,
+} from "@campus-job-agent/storage";
+import { ExtractionJobRunner } from "./extraction-jobs.js";
+import { OnboardingService } from "./onboarding-service.js";
+import { ResumeFileStore } from "./resume-files.js";
+import type { ResumeRouteDependencies } from "./resume-routes.js";
+
+export interface ProductionServices {
+  onboarding: OnboardingService;
+  resumes: ResumeRepository;
+  files: ResumeFileStore;
+  runner: ExtractionJobRunner;
+  resumeRoutes: ResumeRouteDependencies;
+  close(): void;
+}
+
+export async function createProductionServices(
+  environment: NodeJS.ProcessEnv = process.env,
+): Promise<ProductionServices> {
+  const paths = resolveDataPaths(environment.CAMPUS_JOB_AGENT_DATA_DIR);
+  const storage = await openDatabase({ dataRoot: paths.root });
+
+  try {
+    const codexDirectory = await ensureCodexRuntimeDirectory(
+      path.join(tmpdir(), "campus-job-agent", "codex-runtime"),
+    );
+    const profiles = new ProfileRepository(storage.db);
+    const facts = new FactRepository(storage.db);
+    const resumes = new ResumeRepository(storage.db);
+    const files = new ResumeFileStore(paths.root);
+    const onboarding = new OnboardingService({ profiles, facts, resumes });
+    const runner = new ExtractionJobRunner({
+      resumes,
+      facts,
+      files,
+      provider: new CodexProvider({ workingDirectory: codexDirectory }),
+      parse: parseResume,
+    });
+    runner.recoverInterrupted();
+
+    const resumeRoutes: ResumeRouteDependencies = {
+      profiles,
+      resumes,
+      files,
+      runner,
+      enqueue: (work) => { void work(); },
+    };
+    return {
+      onboarding,
+      resumes,
+      files,
+      runner,
+      resumeRoutes,
+      close: () => storage.close(),
+    };
+  } catch (error) {
+    storage.close();
+    throw error;
+  }
+}
