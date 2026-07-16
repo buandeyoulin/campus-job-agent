@@ -20,7 +20,7 @@ export function formatPhase0Report(results: ProbeResult[]): string {
     "",
     "## Interpretation",
     "",
-    "Tencent, OpenAI-compatible, Ollama, PDF output, PDF parsing, and DOCX parsing are required to pass before Phase 1. OfferBiu is informational: FAIL means its public page is not a supported automatic source and the product must show that limitation explicitly.",
+    "Tencent, Codex, PDF output, PDF parsing, and DOCX parsing are required before Phase 1. OpenAI-compatible and Ollama are optional and may report SKIP when not configured. OfferBiu is informational: FAIL means its public page is not a supported automatic source and the product must show that limitation explicitly.",
     "",
   ].join("\n");
 }

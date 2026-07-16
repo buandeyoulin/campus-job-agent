@@ -2,11 +2,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Document, Packer, Paragraph } from "docx";
 import { z } from "zod";
-import { OpenAiCompatibleProvider, OllamaProvider } from "@campus-job-agent/ai-providers";
+import { CodexProvider, ensureCodexRuntimeDirectory, OpenAiCompatibleProvider, OllamaProvider } from "@campus-job-agent/ai-providers";
 import type { ProbeResult } from "@campus-job-agent/contracts";
 import { renderHtmlToPdf } from "@campus-job-agent/materials";
 import { parseResume } from "@campus-job-agent/profile";
 import { probeOfferBiu, probeTencent } from "@campus-job-agent/sources";
+import { failedRequiredProbeNames } from "./phase0-gate.js";
 import { formatPhase0Report, shouldUpdateTrackedReport } from "./phase0-report.js";
 
 const localDir = path.resolve(".local/phase0");
@@ -14,6 +15,7 @@ const checkedAt = () => new Date().toISOString();
 const results: ProbeResult[] = [];
 const connectivity = z.object({ ok: z.literal(true) });
 
+await mkdir(localDir, { recursive: true });
 results.push(await probeTencent());
 results.push(await probeOfferBiu());
 
@@ -27,6 +29,13 @@ async function aiProbe(name: string, provider: { generate<T>(request: { system: 
   }
 }
 
+try {
+  const codexDirectory = await ensureCodexRuntimeDirectory(path.join(localDir, "codex-runtime"));
+  results.push(await aiProbe("codex", new CodexProvider({ workingDirectory: codexDirectory })));
+} catch {
+  results.push({ name: "codex", status: "fail", summary: "Codex runtime could not be prepared", details: {}, checkedAt: checkedAt() });
+}
+
 const openAi = process.env.OPENAI_COMPATIBLE_BASE_URL && process.env.OPENAI_COMPATIBLE_API_KEY && process.env.OPENAI_COMPATIBLE_MODEL
   ? new OpenAiCompatibleProvider({ baseUrl: process.env.OPENAI_COMPATIBLE_BASE_URL, apiKey: process.env.OPENAI_COMPATIBLE_API_KEY, model: process.env.OPENAI_COMPATIBLE_MODEL }) : null;
 const ollama = process.env.OLLAMA_MODEL
@@ -34,7 +43,6 @@ const ollama = process.env.OLLAMA_MODEL
 results.push(await aiProbe("openai-compatible", openAi));
 results.push(await aiProbe("ollama", ollama));
 
-await mkdir(localDir, { recursive: true });
 const pdfPath = path.join(localDir, "chinese-resume.pdf");
 try {
   const pdf = await renderHtmlToPdf({ html: "<!doctype html><meta charset='utf-8'><style>body{font-family:'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif}</style><h1>张三</h1><p>软件工程实习生</p>", outputPath: pdfPath });
@@ -68,7 +76,6 @@ if (shouldUpdateTrackedReport(previousReport, nextReport)) {
   await writeFile(trackedReportPath, nextReport, "utf8");
 }
 
-const required = new Set(["tencent", "openai-compatible", "ollama", "pdf-output", "resume-pdf", "resume-docx"]);
-const failedRequired = results.filter((result) => required.has(result.name) && result.status !== "pass");
+const failures = failedRequiredProbeNames(results);
 console.table(results.map(({ name, status, summary }) => ({ name, status, summary })));
-if (failedRequired.length > 0) process.exitCode = 1;
+if (failures.length > 0) process.exitCode = 1;
