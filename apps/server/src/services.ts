@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { CodexProvider, ensureCodexRuntimeDirectory } from "@campus-job-agent/ai-providers";
+import { CodexProvider, ensureCodexRuntimeDirectory, type StructuredAiProvider } from "@campus-job-agent/ai-providers";
 import { parseResume } from "@campus-job-agent/profile";
 import {
   FactRepository,
@@ -23,16 +23,27 @@ export interface ProductionServices {
   close(): void;
 }
 
+export interface ServiceOverrides {
+  provider?: StructuredAiProvider;
+  parse?: typeof parseResume;
+  enqueue?: (work: () => Promise<void>) => void;
+}
+
 export async function createProductionServices(
   environment: NodeJS.ProcessEnv = process.env,
+  overrides: ServiceOverrides = {},
 ): Promise<ProductionServices> {
   const paths = resolveDataPaths(environment.CAMPUS_JOB_AGENT_DATA_DIR);
   const storage = await openDatabase({ dataRoot: paths.root });
 
   try {
-    const codexDirectory = await ensureCodexRuntimeDirectory(
-      path.join(tmpdir(), "campus-job-agent", "codex-runtime"),
-    );
+    let provider = overrides.provider;
+    if (!provider) {
+      const codexDirectory = await ensureCodexRuntimeDirectory(
+        path.join(tmpdir(), "campus-job-agent", "codex-runtime"),
+      );
+      provider = new CodexProvider({ workingDirectory: codexDirectory });
+    }
     const profiles = new ProfileRepository(storage.db);
     const facts = new FactRepository(storage.db);
     const resumes = new ResumeRepository(storage.db);
@@ -42,8 +53,8 @@ export async function createProductionServices(
       resumes,
       facts,
       files,
-      provider: new CodexProvider({ workingDirectory: codexDirectory }),
-      parse: parseResume,
+      provider,
+      parse: overrides.parse ?? parseResume,
     });
     runner.recoverInterrupted();
 
@@ -52,7 +63,7 @@ export async function createProductionServices(
       resumes,
       files,
       runner,
-      enqueue: (work) => { void work(); },
+      enqueue: overrides.enqueue ?? ((work) => { void work(); }),
     };
     return {
       onboarding,
