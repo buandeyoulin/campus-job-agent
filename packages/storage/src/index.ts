@@ -5,3 +5,4 @@ export * from "./profile-repository.js";
 export * from "./fact-repository.js";
 export * from "./resume-repository.js";
 export * from "./job-repository.js";
+export * from "./application-repository.js";

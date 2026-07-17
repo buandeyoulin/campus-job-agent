@@ -6,6 +6,7 @@ const app = buildApp({
   onboarding: services.onboarding,
   jobs: services.jobs,
   matches: services.matches,
+  applications: services.applications,
   allowedOrigins: new Set([
     "http://127.0.0.1:4318",
     "http://127.0.0.1:4317",

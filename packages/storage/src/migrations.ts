@@ -119,4 +119,24 @@ export const MIGRATIONS: readonly Migration[] = [{
     create index jobs_company_title on jobs(company, title);
     create index job_sources_source on job_sources(source, source_job_id);
   `,
+}, {
+  version: 3,
+  sql: `
+    create table applications (
+      id text primary key,
+      job_id text not null unique references jobs(id) on delete restrict,
+      status text not null check (status in ('saved','preparing','applied','assessment','interview','offer','rejected','withdrawn','expired')),
+      note text not null default '',
+      created_at text not null,
+      updated_at text not null
+    );
+    create table application_events (
+      id text primary key,
+      application_id text not null references applications(id) on delete cascade,
+      status text not null check (status in ('saved','preparing','applied','assessment','interview','offer','rejected','withdrawn','expired')),
+      note text not null default '',
+      created_at text not null
+    );
+    create index application_events_by_application on application_events(application_id, created_at, id);
+  `,
 }];

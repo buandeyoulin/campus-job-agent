@@ -8,6 +8,8 @@ import { registerJobsRoutes } from "./jobs-routes.js";
 import type { JobsService } from "./jobs-service.js";
 import { registerMatchingRoutes } from "./matching-routes.js";
 import type { MatchService } from "./matching-service.js";
+import { registerApplicationsRoutes } from "./applications-routes.js";
+import type { ApplicationsService } from "./applications-service.js";
 
 export const LOCAL_HOST = "127.0.0.1" as const;
 export const API_PORT = 4317;
@@ -18,6 +20,7 @@ export interface AppDependencies {
   resumeRoutes?: ResumeRouteDependencies;
   jobs?: JobsService;
   matches?: MatchService;
+  applications?: ApplicationsService;
 }
 
 export function buildApp(dependencies?: AppDependencies) {
@@ -31,5 +34,6 @@ export function buildApp(dependencies?: AppDependencies) {
   }
   if (dependencies?.jobs) registerJobsRoutes(app, dependencies.jobs);
   if (dependencies?.matches) registerMatchingRoutes(app, dependencies.matches);
+  if (dependencies?.applications) registerApplicationsRoutes(app, dependencies.applications);
   return app;
 }

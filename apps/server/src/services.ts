@@ -4,6 +4,7 @@ import { CodexProvider, ensureCodexRuntimeDirectory, type StructuredAiProvider }
 import { parseResume } from "@campus-job-agent/profile";
 import {
   FactRepository,
+  ApplicationRepository,
   JobRepository,
   openDatabase,
   ProfileRepository,
@@ -17,6 +18,7 @@ import { ResumeFileStore } from "./resume-files.js";
 import type { ResumeRouteDependencies } from "./resume-routes.js";
 import { JobsService } from "./jobs-service.js";
 import { MatchService } from "./matching-service.js";
+import { ApplicationsService } from "./applications-service.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -26,6 +28,7 @@ export interface ProductionServices {
   resumeRoutes: ResumeRouteDependencies;
   jobs: JobsService;
   matches: MatchService;
+  applications: ApplicationsService;
   close(): void;
 }
 
@@ -52,12 +55,14 @@ export async function createProductionServices(
     }
     const profiles = new ProfileRepository(storage.db);
     const jobsRepository = new JobRepository(storage.db);
+    const applicationsRepository = new ApplicationRepository(storage.db);
     const facts = new FactRepository(storage.db);
     const resumes = new ResumeRepository(storage.db);
     const files = new ResumeFileStore(paths.root);
     const onboarding = new OnboardingService({ profiles, facts, resumes });
     const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
     const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
+    const applications = new ApplicationsService(applicationsRepository);
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -82,6 +87,7 @@ export async function createProductionServices(
       resumeRoutes,
       jobs,
       matches,
+      applications,
       close: () => storage.close(),
     };
   } catch (error) {
