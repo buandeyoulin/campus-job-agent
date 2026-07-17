@@ -139,4 +139,27 @@ export const MIGRATIONS: readonly Migration[] = [{
     );
     create index application_events_by_application on application_events(application_id, created_at, id);
   `,
+}, {
+  version: 4,
+  sql: `
+    create table companies (
+      id text primary key,
+      normalized_name text not null unique,
+      display_name text not null,
+      created_at text not null,
+      updated_at text not null
+    );
+    create table company_career_sites (
+      id text primary key,
+      company_id text not null references companies(id) on delete cascade,
+      career_url text not null,
+      directory_source text not null,
+      directory_url text not null,
+      status text not null check (status in ('pending', 'active', 'unavailable')),
+      first_discovered_at text not null,
+      last_discovered_at text not null,
+      unique(directory_source, career_url)
+    );
+    create index company_career_sites_company on company_career_sites(company_id, last_discovered_at desc);
+  `,
 }];

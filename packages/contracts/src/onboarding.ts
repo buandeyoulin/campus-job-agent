@@ -214,6 +214,7 @@ export const ApiErrorCodeSchema = z.enum([
   "file_cleanup_failed",
   "job_not_found",
   "source_unavailable",
+  "company_directory_unavailable",
   "internal_error",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;

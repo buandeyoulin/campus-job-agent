@@ -5,13 +5,14 @@ import { parseResume } from "@campus-job-agent/profile";
 import {
   FactRepository,
   ApplicationRepository,
+  CompanyRepository,
   JobRepository,
   openDatabase,
   ProfileRepository,
   resolveDataPaths,
   ResumeRepository,
 } from "@campus-job-agent/storage";
-import { fetchTencentJobs } from "@campus-job-agent/sources";
+import { fetchOfferBiuCompanyDirectory, fetchTencentJobs } from "@campus-job-agent/sources";
 import { ExtractionJobRunner } from "./extraction-jobs.js";
 import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
@@ -19,6 +20,7 @@ import type { ResumeRouteDependencies } from "./resume-routes.js";
 import { JobsService } from "./jobs-service.js";
 import { MatchService } from "./matching-service.js";
 import { ApplicationsService } from "./applications-service.js";
+import { CompanyDirectoryService } from "./company-directory-service.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -29,6 +31,7 @@ export interface ProductionServices {
   jobs: JobsService;
   matches: MatchService;
   applications: ApplicationsService;
+  companies: CompanyDirectoryService;
   close(): void;
 }
 
@@ -56,6 +59,7 @@ export async function createProductionServices(
     const profiles = new ProfileRepository(storage.db);
     const jobsRepository = new JobRepository(storage.db);
     const applicationsRepository = new ApplicationRepository(storage.db);
+    const companiesRepository = new CompanyRepository(storage.db);
     const facts = new FactRepository(storage.db);
     const resumes = new ResumeRepository(storage.db);
     const files = new ResumeFileStore(paths.root);
@@ -63,6 +67,7 @@ export async function createProductionServices(
     const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
     const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
     const applications = new ApplicationsService(applicationsRepository);
+    const companies = new CompanyDirectoryService({ repository: companiesRepository, fetchOfferBiu: fetchOfferBiuCompanyDirectory });
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -88,6 +93,7 @@ export async function createProductionServices(
       jobs,
       matches,
       applications,
+      companies,
       close: () => storage.close(),
     };
   } catch (error) {
