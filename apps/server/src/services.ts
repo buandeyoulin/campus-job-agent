@@ -16,6 +16,7 @@ import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
 import type { ResumeRouteDependencies } from "./resume-routes.js";
 import { JobsService } from "./jobs-service.js";
+import { MatchService } from "./matching-service.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -24,6 +25,7 @@ export interface ProductionServices {
   runner: ExtractionJobRunner;
   resumeRoutes: ResumeRouteDependencies;
   jobs: JobsService;
+  matches: MatchService;
   close(): void;
 }
 
@@ -55,6 +57,7 @@ export async function createProductionServices(
     const files = new ResumeFileStore(paths.root);
     const onboarding = new OnboardingService({ profiles, facts, resumes });
     const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
+    const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -78,6 +81,7 @@ export async function createProductionServices(
       runner,
       resumeRoutes,
       jobs,
+      matches,
       close: () => storage.close(),
     };
   } catch (error) {

@@ -6,6 +6,8 @@ import { installOriginGuard } from "./origin-guard.js";
 import { registerResumeRoutes, type ResumeRouteDependencies } from "./resume-routes.js";
 import { registerJobsRoutes } from "./jobs-routes.js";
 import type { JobsService } from "./jobs-service.js";
+import { registerMatchingRoutes } from "./matching-routes.js";
+import type { MatchService } from "./matching-service.js";
 
 export const LOCAL_HOST = "127.0.0.1" as const;
 export const API_PORT = 4317;
@@ -15,6 +17,7 @@ export interface AppDependencies {
   allowedOrigins: ReadonlySet<string>;
   resumeRoutes?: ResumeRouteDependencies;
   jobs?: JobsService;
+  matches?: MatchService;
 }
 
 export function buildApp(dependencies?: AppDependencies) {
@@ -27,5 +30,6 @@ export function buildApp(dependencies?: AppDependencies) {
     if (dependencies.resumeRoutes) registerResumeRoutes(app, dependencies.resumeRoutes);
   }
   if (dependencies?.jobs) registerJobsRoutes(app, dependencies.jobs);
+  if (dependencies?.matches) registerMatchingRoutes(app, dependencies.matches);
   return app;
 }
