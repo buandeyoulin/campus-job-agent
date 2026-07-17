@@ -75,4 +75,48 @@ export const MIGRATIONS: readonly Migration[] = [{
     create index profile_facts_fingerprint on profile_facts(profile_id, fingerprint);
     create unique index one_active_resume on resume_uploads(profile_id) where is_active = 1;
   `,
+}, {
+  version: 2,
+  sql: `
+    create table jobs (
+      id text primary key,
+      fingerprint text not null unique,
+      source text not null,
+      source_job_id text not null,
+      source_url text not null,
+      title text not null,
+      company text not null,
+      location text not null default '',
+      description text not null,
+      posted_at text,
+      status text not null check (status in ('unknown', 'active', 'expired')),
+      first_captured_at text not null,
+      last_captured_at text not null
+    );
+
+    create table job_sources (
+      job_id text not null references jobs(id) on delete cascade,
+      source text not null,
+      source_job_id text not null,
+      source_url text not null,
+      title text not null,
+      company text not null,
+      location text not null default '',
+      description text not null,
+      posted_at text,
+      captured_at text not null,
+      primary key (job_id, source, source_job_id)
+    );
+
+    create table source_scans (
+      source text primary key,
+      last_checked_at text not null,
+      succeeded integer not null check (succeeded in (0, 1)),
+      message text not null
+    );
+
+    create index jobs_list_order on jobs(last_captured_at desc, id);
+    create index jobs_company_title on jobs(company, title);
+    create index job_sources_source on job_sources(source, source_job_id);
+  `,
 }];

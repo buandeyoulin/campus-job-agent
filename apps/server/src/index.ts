@@ -4,6 +4,7 @@ import { createProductionServices } from "./services.js";
 const services = await createProductionServices();
 const app = buildApp({
   onboarding: services.onboarding,
+  jobs: services.jobs,
   allowedOrigins: new Set([
     "http://127.0.0.1:4318",
     "http://127.0.0.1:4317",

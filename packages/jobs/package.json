@@ -1,5 +1,5 @@
 {
-  "name": "@campus-job-agent/storage",
+  "name": "@campus-job-agent/jobs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@campus-job-agent/contracts": "0.0.0",
-    "@campus-job-agent/jobs": "0.0.0"
+    "@campus-job-agent/contracts": "0.0.0"
   }
 }

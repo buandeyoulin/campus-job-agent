@@ -2,6 +2,13 @@ import { NormalizedJobSchema, type NormalizedJob, type ProbeResult } from "@camp
 
 const API = "https://careers.tencent.com/tencentcareer/api/post/Query";
 
+export interface TencentFetchOptions {
+  fetchImpl?: typeof fetch;
+  now?: () => Date;
+  pageSize?: number;
+  maxJobs?: number;
+}
+
 function parseChineseDate(value: unknown): string | undefined {
   const match = String(value ?? "").match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
   if (!match) return undefined;
@@ -29,6 +36,37 @@ export function parseTencentResponse(input: unknown, capturedAt: string): Normal
       capturedAt,
     })];
   });
+}
+
+function totalPosts(input: unknown): number {
+  const count = (input as { Data?: { Count?: unknown } })?.Data?.Count;
+  return Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+}
+
+export async function fetchTencentJobs(options: TencentFetchOptions = {}): Promise<NormalizedJob[]> {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const now = options.now ?? (() => new Date());
+  const pageSize = Math.min(Math.max(options.pageSize ?? 20, 1), 50);
+  const maxJobs = Math.min(Math.max(options.maxJobs ?? 100, 1), 100);
+  const all: NormalizedJob[] = [];
+  let expected = maxJobs;
+
+  for (let pageIndex = 1; all.length < expected; pageIndex += 1) {
+    const url = new URL(API);
+    url.searchParams.set("timestamp", String(now().getTime()));
+    url.searchParams.set("keyword", "实习");
+    url.searchParams.set("pageIndex", String(pageIndex));
+    url.searchParams.set("pageSize", String(pageSize));
+    url.searchParams.set("language", "zh-cn");
+    const response = await fetchImpl(url, { redirect: "error", signal: AbortSignal.timeout(5_000) });
+    if (!response.ok) throw new Error(`Tencent public API returned HTTP ${response.status}`);
+    const payload: unknown = await response.json();
+    if (pageIndex === 1) expected = Math.min(totalPosts(payload), maxJobs);
+    const jobs = parseTencentResponse(payload, now().toISOString());
+    all.push(...jobs);
+    if (jobs.length === 0 || all.length >= expected) break;
+  }
+  return all.slice(0, maxJobs);
 }
 
 export async function probeTencent(fetchImpl: typeof fetch = fetch, now: () => Date = () => new Date()): Promise<ProbeResult> {

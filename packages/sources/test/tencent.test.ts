@@ -1,6 +1,6 @@
 import fixture from "./fixtures/tencent.json";
 import { describe, expect, it, vi } from "vitest";
-import { parseTencentResponse, probeTencent } from "../src/tencent.js";
+import { fetchTencentJobs, parseTencentResponse, probeTencent } from "../src/tencent.js";
 
 describe("Tencent public source", () => {
   it("normalizes the public API response and upgrades the URL to HTTPS", () => {
@@ -19,5 +19,16 @@ describe("Tencent public source", () => {
     const result = await probeTencent(fetchImpl, () => new Date("2026-07-16T00:00:00.000Z"));
     expect(result.status).toBe("fail");
     expect(result.summary).toBe("Tencent public API request failed");
+  });
+
+  it("fetches the public API without credentials and returns normalized jobs", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(fixture), { status: 200 })) as unknown as typeof fetch;
+
+    const jobs = await fetchTencentJobs({ fetchImpl, now: () => new Date("2026-07-16T00:00:00.000Z") });
+
+    expect(jobs).toHaveLength(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(String(vi.mocked(fetchImpl).mock.calls[0]?.[0])).toContain("pageIndex=1");
+    expect(vi.mocked(fetchImpl).mock.calls[0]?.[1]).not.toHaveProperty("headers");
   });
 });

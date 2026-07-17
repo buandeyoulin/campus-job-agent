@@ -212,6 +212,8 @@ export const ApiErrorCodeSchema = z.enum([
   "resume_not_found",
   "resume_state_conflict",
   "file_cleanup_failed",
+  "job_not_found",
+  "source_unavailable",
   "internal_error",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;

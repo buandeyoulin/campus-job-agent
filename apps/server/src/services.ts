@@ -4,15 +4,18 @@ import { CodexProvider, ensureCodexRuntimeDirectory, type StructuredAiProvider }
 import { parseResume } from "@campus-job-agent/profile";
 import {
   FactRepository,
+  JobRepository,
   openDatabase,
   ProfileRepository,
   resolveDataPaths,
   ResumeRepository,
 } from "@campus-job-agent/storage";
+import { fetchTencentJobs } from "@campus-job-agent/sources";
 import { ExtractionJobRunner } from "./extraction-jobs.js";
 import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
 import type { ResumeRouteDependencies } from "./resume-routes.js";
+import { JobsService } from "./jobs-service.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -20,6 +23,7 @@ export interface ProductionServices {
   files: ResumeFileStore;
   runner: ExtractionJobRunner;
   resumeRoutes: ResumeRouteDependencies;
+  jobs: JobsService;
   close(): void;
 }
 
@@ -45,10 +49,12 @@ export async function createProductionServices(
       provider = new CodexProvider({ workingDirectory: codexDirectory });
     }
     const profiles = new ProfileRepository(storage.db);
+    const jobsRepository = new JobRepository(storage.db);
     const facts = new FactRepository(storage.db);
     const resumes = new ResumeRepository(storage.db);
     const files = new ResumeFileStore(paths.root);
     const onboarding = new OnboardingService({ profiles, facts, resumes });
+    const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -71,6 +77,7 @@ export async function createProductionServices(
       files,
       runner,
       resumeRoutes,
+      jobs,
       close: () => storage.close(),
     };
   } catch (error) {

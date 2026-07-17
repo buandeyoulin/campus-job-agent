@@ -23,7 +23,8 @@ describe("storage database", () => {
     const storage = await openDatabase({ dataRoot: root });
 
     expect(storage.paths).toEqual(paths);
-    expect(storage.db.prepare("select version from schema_migrations").all()).toMatchObject([{ version: 1 }]);
+    expect(storage.db.prepare("select version from schema_migrations order by version").all())
+      .toMatchObject(MIGRATIONS.map((migration) => ({ version: migration.version })));
     expect(storage.db.prepare("select name from sqlite_master where type='table' and name='profile_facts'").get()).toMatchObject({ name: "profile_facts" });
     expect(path.relative(root, storage.paths.database)).not.toMatch(/^\.\.(?:[\\/]|$)/);
     storage.close();
@@ -45,8 +46,8 @@ describe("storage database", () => {
     const first = await openDatabase({ dataRoot: root });
     first.close();
 
-    const migration2: Migration = { version: 2, sql: "create table migration_probe (value text not null);" };
-    const second = await openDatabase({ dataRoot: root, migrations: [...MIGRATIONS, migration2] });
+    const migration3: Migration = { version: MIGRATIONS.at(-1)!.version + 1, sql: "create table migration_probe (value text not null);" };
+    const second = await openDatabase({ dataRoot: root, migrations: [...MIGRATIONS, migration3] });
     expect(second.db.prepare("select name from sqlite_master where name='migration_probe'").get()).toMatchObject({ name: "migration_probe" });
     second.close();
 
@@ -61,7 +62,7 @@ describe("storage database", () => {
     first.close();
 
     const broken: Migration = {
-      version: 2,
+      version: MIGRATIONS.at(-1)!.version + 1,
       sql: "create table rolled_back (value text); insert into missing_table values ('x');",
     };
     await expect(openDatabase({ dataRoot: root, migrations: [...MIGRATIONS, broken] })).rejects.toThrow("Storage migration failed");

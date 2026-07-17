@@ -5,6 +5,8 @@ import { PreferencesCard } from "./components/PreferencesCard";
 import { ProfileCard } from "./components/ProfileCard";
 import { ResumePanel } from "./components/ResumePanel";
 import { FactsPanel } from "./components/FactsPanel";
+import { JobsWorkspace } from "./components/JobsWorkspace";
+import { browserJobsApi, type JobsApi } from "./jobs-api";
 
 const MISSING_LABELS: Record<string, string> = {
   "profile.name": "姓名或称呼",
@@ -24,9 +26,10 @@ function errorMessage(error: unknown): string {
 
 export interface AppProps {
   api?: OnboardingApi;
+  jobsApi?: JobsApi;
 }
 
-export function App({ api = browserOnboardingApi }: AppProps) {
+export function App({ api = browserOnboardingApi, jobsApi }: AppProps) {
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -89,6 +92,7 @@ export function App({ api = browserOnboardingApi }: AppProps) {
   }
 
   const profileExists = Boolean(snapshot.profile?.displayName);
+  const resolvedJobsApi = jobsApi ?? (api === browserOnboardingApi ? browserJobsApi : undefined);
   const totalFacts = Object.values(snapshot.factCounts).reduce((sum, count) => sum + count, 0);
 
   return (
@@ -164,6 +168,7 @@ export function App({ api = browserOnboardingApi }: AppProps) {
             api={api}
             onRefresh={async () => setSnapshot(await api.getSnapshot())}
           />
+          {resolvedJobsApi ? <JobsWorkspace api={resolvedJobsApi} /> : null}
         </main>
       </div>
     </div>
