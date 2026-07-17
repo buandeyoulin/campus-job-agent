@@ -72,4 +72,33 @@ describe("job discovery routes", () => {
     expect(ApiErrorSchema.parse(response.json()).error.code).toBe("validation_failed");
     expect(response.body).not.toContain("不应回显");
   });
+
+  it("imports visible OfferBiu session records into the local job library without credentials", async () => {
+    const app = await setup();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/jobs/import/offerbiu-visible",
+      headers: { origin: ORIGIN },
+      payload: {
+        records: [{
+          company: "Example Semiconductor",
+          roles: "Digital IC Design Engineer",
+          location: "Shanghai",
+          industry: "Semiconductor",
+          cohort: "2027",
+          deadline: "Open until filled",
+          requirement: "Campus recruiting",
+          applyUrl: "https://careers.example.com/campus/digital-ic",
+        }],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(ScanResultSchema.parse(response.json())).toMatchObject({ source: "offerbiu-authenticated", fetched: 1, created: 1 });
+    const listed = await app.inject({ method: "GET", url: "/api/jobs?source=offerbiu-authenticated" });
+    expect(JobListSchema.parse(listed.json())).toMatchObject({
+      total: 1,
+      jobs: [expect.objectContaining({ company: "Example Semiconductor", sourceUrl: "https://careers.example.com/campus/digital-ic" })],
+    });
+  });
 });

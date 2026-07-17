@@ -24,6 +24,24 @@ export const JobImportSchema = z.object({
 });
 export type JobImport = z.infer<typeof JobImportSchema>;
 
+const VisibleOfferBiuText = z.string().trim().min(1).max(1_000);
+export const OfferBiuVisibleRecordSchema = z.object({
+  company: VisibleOfferBiuText,
+  roles: VisibleOfferBiuText,
+  location: z.string().trim().max(500).default(""),
+  industry: z.string().trim().max(300).default(""),
+  cohort: z.string().trim().max(100).default(""),
+  deadline: z.string().trim().max(100).default(""),
+  requirement: z.string().trim().max(300).default(""),
+  applyUrl: z.url(),
+});
+export type OfferBiuVisibleRecord = z.infer<typeof OfferBiuVisibleRecordSchema>;
+
+export const OfferBiuVisibleImportSchema = z.object({
+  records: z.array(OfferBiuVisibleRecordSchema).min(1).max(100),
+});
+export type OfferBiuVisibleImport = z.infer<typeof OfferBiuVisibleImportSchema>;
+
 const OptionalFilter = z.string().trim().max(100).default("");
 export const JobListQuerySchema = z.object({
   keyword: OptionalFilter,

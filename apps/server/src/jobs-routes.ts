@@ -23,4 +23,5 @@ export function registerJobsRoutes(app: FastifyInstance, jobs: JobsService): voi
     }
   });
   app.post("/api/jobs/import", async (request, reply) => reply.code(201).send(jobs.importJobs(request.body)));
+  app.post("/api/jobs/import/offerbiu-visible", async (request, reply) => reply.code(201).send(jobs.importOfferBiuVisible(request.body)));
 }

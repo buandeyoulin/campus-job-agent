@@ -1,5 +1,6 @@
 import {
   JobImportSchema,
+  OfferBiuVisibleImportSchema,
   JobListQuerySchema,
   ScanResultSchema,
   type JobImport,
@@ -66,6 +67,28 @@ export class JobsService {
   importJobs(input: unknown): ScanResult {
     const parsed = JobImportSchema.parse(input);
     return this.persist("manual", parsed.jobs);
+  }
+
+  importOfferBiuVisible(input: unknown): ScanResult {
+    const payload = OfferBiuVisibleImportSchema.parse(input);
+    const capturedAt = this.now().toISOString();
+    const jobs = payload.records.map((record) => ({
+      source: "offerbiu-authenticated",
+      sourceJobId: `${record.company}\u0000${record.roles}\u0000${record.applyUrl}`,
+      sourceUrl: record.applyUrl,
+      title: record.roles,
+      company: record.company,
+      location: record.location,
+      description: [
+        "Visible in the user's signed-in OfferBiu recruitment library.",
+        record.industry && `Industry: ${record.industry}`,
+        record.cohort && `Cohort: ${record.cohort}`,
+        record.deadline && `Deadline: ${record.deadline}`,
+        record.requirement && `Requirements: ${record.requirement}`,
+      ].filter(Boolean).join("\n"),
+      capturedAt,
+    }));
+    return this.persist("offerbiu-authenticated", jobs);
   }
 
   private persist(source: string, values: NormalizedJob[]): ScanResult {
