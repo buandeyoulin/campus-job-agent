@@ -7,6 +7,8 @@ import { ResumePanel } from "./components/ResumePanel";
 import { FactsPanel } from "./components/FactsPanel";
 import { JobsWorkspace } from "./components/JobsWorkspace";
 import { browserJobsApi, type JobsApi } from "./jobs-api";
+import { browserCompanyDirectoryApi, type CompanyDirectoryApi } from "./company-directory-api";
+import { CompanyDirectoryWorkspace } from "./components/CompanyDirectoryWorkspace";
 
 const MISSING_LABELS: Record<string, string> = {
   "profile.name": "姓名或称呼",
@@ -27,9 +29,10 @@ function errorMessage(error: unknown): string {
 export interface AppProps {
   api?: OnboardingApi;
   jobsApi?: JobsApi;
+  companyDirectoryApi?: CompanyDirectoryApi;
 }
 
-export function App({ api = browserOnboardingApi, jobsApi }: AppProps) {
+export function App({ api = browserOnboardingApi, jobsApi, companyDirectoryApi }: AppProps) {
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -93,6 +96,7 @@ export function App({ api = browserOnboardingApi, jobsApi }: AppProps) {
 
   const profileExists = Boolean(snapshot.profile?.displayName);
   const resolvedJobsApi = jobsApi ?? (api === browserOnboardingApi ? browserJobsApi : undefined);
+  const resolvedCompanyDirectoryApi = companyDirectoryApi ?? (api === browserOnboardingApi ? browserCompanyDirectoryApi : undefined);
   const totalFacts = Object.values(snapshot.factCounts).reduce((sum, count) => sum + count, 0);
 
   return (
@@ -169,6 +173,7 @@ export function App({ api = browserOnboardingApi, jobsApi }: AppProps) {
             onRefresh={async () => setSnapshot(await api.getSnapshot())}
           />
           {resolvedJobsApi ? <JobsWorkspace api={resolvedJobsApi} /> : null}
+          {resolvedCompanyDirectoryApi ? <CompanyDirectoryWorkspace api={resolvedCompanyDirectoryApi} /> : null}
         </main>
       </div>
     </div>
