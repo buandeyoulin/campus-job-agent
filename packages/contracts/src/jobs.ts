@@ -3,9 +3,15 @@ import { NormalizedJobSchema } from "./phase0.js";
 
 export const JobStatusSchema = z.enum(["unknown", "active", "expired"]);
 export type JobStatus = z.infer<typeof JobStatusSchema>;
+export const JobLifecycleStatusSchema = z.enum(["active", "possibly_expired", "closed"]);
+export type JobLifecycleStatus = z.infer<typeof JobLifecycleStatusSchema>;
 
 export const JobSourceSchema = NormalizedJobSchema.extend({
   sourceCapturedAt: z.iso.datetime().optional(),
+  companyId: z.uuid().nullable().default(null),
+  careerSourceId: z.uuid().nullable().default(null),
+  lastSeenAt: z.iso.datetime().nullable().default(null),
+  missingCompleteScans: z.number().int().nonnegative().default(0),
 });
 export type JobSource = z.infer<typeof JobSourceSchema>;
 
@@ -13,6 +19,7 @@ export const StoredJobSchema = NormalizedJobSchema.extend({
   id: z.uuid(),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   status: JobStatusSchema,
+  lifecycleStatus: JobLifecycleStatusSchema,
   firstCapturedAt: z.iso.datetime(),
   lastCapturedAt: z.iso.datetime(),
   sources: z.array(JobSourceSchema).min(1).max(50),
@@ -59,3 +66,17 @@ export const SourceStatusSchema = z.object({
   lastCheckedAt: z.iso.datetime().nullable(),
 });
 export type SourceStatus = z.infer<typeof SourceStatusSchema>;
+
+export const OfficialJobSyncRequestSchema = z.object({ companyId: z.uuid().optional() }).strict();
+export type OfficialJobSyncRequest = z.infer<typeof OfficialJobSyncRequestSchema>;
+export const OfficialJobSyncResultSchema = z.object({
+  sourcesSelected: z.number().int().nonnegative(),
+  sourcesSucceeded: z.number().int().nonnegative(),
+  sourcesSkipped: z.number().int().nonnegative(),
+  sourcesFailed: z.number().int().nonnegative(),
+  jobsFetched: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  completedAt: z.iso.datetime(),
+});
+export type OfficialJobSyncResult = z.infer<typeof OfficialJobSyncResultSchema>;

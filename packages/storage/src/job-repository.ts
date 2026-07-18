@@ -26,6 +26,7 @@ interface JobRow {
   description: string;
   posted_at: string | null;
   status: "unknown" | "active" | "expired";
+  lifecycle_status: "active" | "possibly_expired" | "closed";
   first_captured_at: string;
   last_captured_at: string;
 }
@@ -40,6 +41,10 @@ interface SourceRow {
   description: string;
   posted_at: string | null;
   captured_at: string;
+  company_id: string | null;
+  career_source_id: string | null;
+  last_seen_at: string | null;
+  missing_complete_scans: number;
 }
 
 function jobInput(row: JobRow) {
@@ -67,6 +72,10 @@ function sourceInput(row: SourceRow) {
     description: row.description,
     ...(row.posted_at ? { postedAt: row.posted_at } : {}),
     capturedAt: row.captured_at,
+    companyId: row.company_id,
+    careerSourceId: row.career_source_id,
+    lastSeenAt: row.last_seen_at,
+    missingCompleteScans: row.missing_complete_scans,
   };
 }
 
@@ -81,6 +90,8 @@ export class JobRepository {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
+  transaction<T>(operation: () => T): T { return withTransaction(this.db, operation); }
+
   get(id: string): StoredJob | null {
     const row = this.db.prepare("select * from jobs where id = ?").get(id) as JobRow | undefined;
     if (!row) return null;
@@ -89,6 +100,7 @@ export class JobRepository {
       id: row.id,
       fingerprint: row.fingerprint,
       status: row.status,
+      lifecycleStatus: row.lifecycle_status,
       firstCapturedAt: row.first_captured_at,
       lastCapturedAt: row.last_captured_at,
       sources: sources.map(sourceInput),
@@ -123,6 +135,48 @@ export class JobRepository {
           description = excluded.description, posted_at = excluded.posted_at, captured_at = excluded.captured_at
       `).run(id, job.source, job.sourceJobId, job.sourceUrl, job.title, job.company, job.location, job.description, job.postedAt ?? null, job.capturedAt);
       return { job: this.get(id)!, created: !existing };
+    });
+  }
+
+  upsertOfficialJob(companyId: string, careerSourceId: string, value: NormalizedJob): UpsertedJob {
+    const attached = this.db.prepare(`select source.id from company_career_sources source
+      join companies company on company.id = source.company_id
+      where source.id = ? and source.company_id = ? and company.status = 'active' and source.status in ('pending', 'active', 'backoff')`)
+      .get(careerSourceId, companyId);
+    if (!attached) throw new Error("Official source is not attached to an active verified company");
+    return withTransaction(this.db, () => {
+      const result = this.upsert({ ...value, source: "official-company" });
+      this.db.prepare(`update job_sources set company_id = ?, career_source_id = ?, last_seen_at = ?, missing_complete_scans = 0
+        where job_id = ? and source = 'official-company' and source_job_id = ?`)
+        .run(companyId, careerSourceId, value.capturedAt, result.job.id, value.sourceJobId);
+      this.db.prepare("update jobs set lifecycle_status = 'active' where id = ?").run(result.job.id);
+      return { ...result, job: this.get(result.job.id)! };
+    });
+  }
+
+  completeOfficialSourceScan(careerSourceId: string, seenSourceJobIds: ReadonlySet<string>, checkedAt: string): void {
+    withTransaction(this.db, () => {
+      const rows = this.db.prepare("select job_id, source_job_id from job_sources where career_source_id = ?")
+        .all(careerSourceId) as Array<{ job_id: string; source_job_id: string }>;
+      const affected = new Set<string>();
+      for (const row of rows) {
+        affected.add(row.job_id);
+        if (seenSourceJobIds.has(row.source_job_id)) {
+          this.db.prepare("update job_sources set missing_complete_scans = 0, last_seen_at = ? where career_source_id = ? and source_job_id = ?")
+            .run(checkedAt, careerSourceId, row.source_job_id);
+        } else {
+          this.db.prepare("update job_sources set missing_complete_scans = missing_complete_scans + 1 where career_source_id = ? and source_job_id = ?")
+            .run(careerSourceId, row.source_job_id);
+        }
+      }
+      for (const jobId of affected) {
+        const state = this.db.prepare(`select
+          max(case when career_source_id is null or missing_complete_scans = 0 then 1 else 0 end) as has_active,
+          min(case when career_source_id is not null then missing_complete_scans else 0 end) as minimum_missing
+          from job_sources where job_id = ?`).get(jobId) as { has_active: number; minimum_missing: number };
+        const lifecycle = state.has_active ? "active" : state.minimum_missing >= 2 ? "closed" : "possibly_expired";
+        this.db.prepare("update jobs set lifecycle_status = ? where id = ?").run(lifecycle, jobId);
+      }
     });
   }
 

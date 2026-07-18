@@ -12,7 +12,7 @@ import {
   resolveDataPaths,
   ResumeRepository,
 } from "@campus-job-agent/storage";
-import { BraveCompanyDiscovery, fetchTencentJobs } from "@campus-job-agent/sources";
+import { BraveCompanyDiscovery, BUILT_IN_HTML_CAREER_CONFIGURATIONS, fetchTencentJobs, HtmlCareerJobAdapter, JsonLdJobAdapter, OfficialJsonJobAdapter } from "@campus-job-agent/sources";
 import { ExtractionJobRunner } from "./extraction-jobs.js";
 import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
@@ -21,6 +21,8 @@ import { JobsService } from "./jobs-service.js";
 import { MatchService } from "./matching-service.js";
 import { ApplicationsService } from "./applications-service.js";
 import { CompanyDirectoryService } from "./company-directory-service.js";
+import { CompanyJobSyncService } from "./company-job-sync-service.js";
+import { CompanyMaintenanceRunner } from "./company-maintenance-runner.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -32,6 +34,8 @@ export interface ProductionServices {
   matches: MatchService;
   applications: ApplicationsService;
   companies: CompanyDirectoryService;
+  companyJobSync: CompanyJobSyncService;
+  maintenance: CompanyMaintenanceRunner;
   close(): void;
 }
 
@@ -73,6 +77,17 @@ export async function createProductionServices(
       ...(braveKey ? { discoveryProvider: new BraveCompanyDiscovery({ apiKey: braveKey }) } : {}),
     });
     companies.importSeed();
+    const companyJobSync = new CompanyJobSyncService({
+      companies: companiesRepository,
+      jobs: jobsRepository,
+      adapters: [
+        new JsonLdJobAdapter(),
+        new HtmlCareerJobAdapter({ configurations: BUILT_IN_HTML_CAREER_CONFIGURATIONS }),
+        new OfficialJsonJobAdapter({ configurations: {} }),
+      ],
+    });
+    const maintenance = new CompanyMaintenanceRunner({ companies, jobSync: companyJobSync });
+    maintenance.start();
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -99,7 +114,9 @@ export async function createProductionServices(
       matches,
       applications,
       companies,
-      close: () => storage.close(),
+      companyJobSync,
+      maintenance,
+      close: () => { maintenance.stop(); storage.close(); },
     };
   } catch (error) {
     storage.close();

@@ -259,10 +259,11 @@ export class CompanyRepository {
         .run(now, outcome.complete ? now : current.lastCompleteSyncAt, now, id);
     } else {
       const failures = current.consecutiveFailures + 1;
-      const backoff = failures >= 3 ? new Date(nowDate.getTime() + Math.min(24, 2 ** (failures - 3)) * 3_600_000).toISOString() : null;
+      const backoffHours = Math.min(24 * 7, 6 * 2 ** Math.min(failures - 1, 6));
+      const backoff = new Date(nowDate.getTime() + backoffHours * 3_600_000).toISOString();
       this.db.prepare(`update company_career_sources set status = ?, health_score = ?, last_failure_at = ?, backoff_until = ?,
         consecutive_failures = ?, last_error = ?, updated_at = ? where id = ?`)
-        .run(backoff ? "backoff" : "pending", Math.max(0, current.healthScore - 20), now, backoff, failures,
+        .run("backoff", Math.max(0, current.healthScore - 20), now, backoff, failures,
           outcome.error ?? "Unknown synchronization failure", now, id);
     }
     return this.getCareerSource(id)!;
@@ -334,5 +335,24 @@ export class CompanyRepository {
     const rows = this.db.prepare("select * from company_career_sources where company_id = ? order by canonical_url, id")
       .all(companyId) as unknown as SourceRow[];
     return rows.map(toSource);
+  }
+
+  listEligibleCareerSources(options: { companyId?: string; at?: string; dueOnly?: boolean } = {}): Array<{ company: Company; source: CompanyCareerSource }> {
+    const at = options.at ?? this.now().toISOString();
+    const clauses = ["company.status = 'active'", "(source.status in ('pending', 'active') or (source.status = 'backoff' and source.backoff_until <= ?))", "(source.backoff_until is null or source.backoff_until <= ?)"];
+    const params: Array<string | number> = [at, at];
+    if (options.companyId) { clauses.push("company.id = ?"); params.push(options.companyId); }
+    if (options.dueOnly) { clauses.push("(source.next_sync_at is null or source.next_sync_at <= ?)"); params.push(at); }
+    const rows = this.db.prepare(`select source.id as source_id, company.id as company_id from company_career_sources source
+      join companies company on company.id = source.company_id where ${clauses.join(" and ")} order by source.next_sync_at, source.id`)
+      .all(...params) as Array<{ source_id: string; company_id: string }>;
+    return rows.map((row) => ({ company: this.getCompany(row.company_id)!, source: this.getCareerSource(row.source_id)! }));
+  }
+
+  scheduleCareerSource(id: string, nextSyncAt: string): CompanyCareerSource {
+    const result = this.db.prepare("update company_career_sources set next_sync_at = ?, updated_at = ? where id = ?")
+      .run(nextSyncAt, this.now().toISOString(), id);
+    if (result.changes === 0) throw new Error("Career source not found");
+    return this.getCareerSource(id)!;
   }
 }

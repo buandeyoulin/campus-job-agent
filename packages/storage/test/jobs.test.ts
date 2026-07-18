@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { JobRepository, openDatabase, type StorageDatabase } from "../src/index.js";
+import { CompanyRepository, JobRepository, openDatabase, type StorageDatabase } from "../src/index.js";
 
 const roots: string[] = [];
 const storages: StorageDatabase[] = [];
@@ -53,5 +53,27 @@ describe("job repository", () => {
 
     expect(repository.list({ keyword: "前端", city: "上海", source: "tencent", status: "active", page: 1, pageSize: 20 }).total).toBe(1);
     expect(repository.getSourceStatuses()).toEqual([expect.objectContaining({ source: "tencent", available: false })]);
+  });
+
+  it("requires two complete source absences before closing an official job", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-official-jobs-"));
+    roots.push(root);
+    const storage = await openDatabase({ dataRoot: root });
+    storages.push(storage);
+    const companies = new CompanyRepository(storage.db, () => new Date(capturedAt));
+    const jobs = new JobRepository(storage.db, () => new Date(capturedAt));
+    const company = companies.upsertSeed({ canonicalName: "Official Semi", aliases: [], officialDomain: "official.example", industries: ["chip_design"], regions: ["中国"], verificationEvidence: [{ kind: "official_domain", url: "https://official.example/", detail: "Official" }] }).company;
+    const source = companies.upsertCareerSource(company.id, { canonicalUrl: "https://official.example/careers", kind: "html", adapter: "static", verificationEvidence: [] }).source;
+    const official = { ...job, source: "official-company", sourceJobId: "req-1", sourceUrl: "https://official.example/jobs/req-1", company: company.canonicalName };
+
+    const first = jobs.upsertOfficialJob(company.id, source.id, official);
+    expect(jobs.upsertOfficialJob(company.id, source.id, official).created).toBe(false);
+    jobs.completeOfficialSourceScan(source.id, new Set(), "2026-07-19T08:00:00.000Z");
+    expect(jobs.get(first.job.id)?.lifecycleStatus).toBe("possibly_expired");
+    jobs.completeOfficialSourceScan(source.id, new Set(), "2026-07-20T08:00:00.000Z");
+    expect(jobs.get(first.job.id)?.lifecycleStatus).toBe("closed");
+
+    jobs.upsertOfficialJob(company.id, source.id, { ...official, capturedAt: "2026-07-21T08:00:00.000Z" });
+    expect(jobs.get(first.job.id)?.lifecycleStatus).toBe("active");
   });
 });

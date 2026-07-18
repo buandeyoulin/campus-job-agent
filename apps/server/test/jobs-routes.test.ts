@@ -1,12 +1,13 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiErrorSchema, JobListSchema, ScanResultSchema } from "@campus-job-agent/contracts";
 import { JobRepository, openDatabase, type StorageDatabase } from "@campus-job-agent/storage";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
 import { JobsService } from "../src/jobs-service.js";
+import type { CompanyJobSyncService } from "../src/company-job-sync-service.js";
 
 const ORIGIN = "http://127.0.0.1:4318";
 const roots: string[] = [];
@@ -23,7 +24,7 @@ const job = {
   capturedAt: "2026-07-17T10:00:00.000Z",
 };
 
-async function setup() {
+async function setup(companyJobSync?: CompanyJobSyncService) {
   const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-job-api-"));
   roots.push(root);
   const storage = await openDatabase({ dataRoot: root });
@@ -32,7 +33,7 @@ async function setup() {
     repository: new JobRepository(storage.db),
     fetchTencent: async () => [job],
   });
-  const app = buildApp({ jobs, allowedOrigins: new Set([ORIGIN]) });
+  const app = buildApp({ jobs, companyJobSync, allowedOrigins: new Set([ORIGIN]) });
   apps.push(app);
   return app;
 }
@@ -93,5 +94,13 @@ describe("job discovery routes", () => {
     });
 
     expect(response.statusCode).toBe(404);
+  });
+
+  it("exposes manual official-company synchronization without applying to jobs", async () => {
+    const sync = vi.fn(async () => ({ sourcesSelected: 0, sourcesSucceeded: 0, sourcesSkipped: 0, sourcesFailed: 0, jobsFetched: 0, created: 0, updated: 0, completedAt: "2026-07-18T08:00:00.000Z" }));
+    const app = await setup({ sync } as unknown as CompanyJobSyncService);
+    const response = await app.inject({ method: "POST", url: "/api/companies/jobs/sync", headers: { origin: ORIGIN }, payload: {} });
+    expect(response.statusCode).toBe(200);
+    expect(sync).toHaveBeenCalledWith({});
   });
 });

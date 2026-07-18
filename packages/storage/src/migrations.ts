@@ -245,4 +245,15 @@ export const MIGRATIONS: readonly Migration[] = [{
   sql: `
     alter table company_career_sources add column verification_evidence_json text not null default '[]' check (json_valid(verification_evidence_json));
   `,
+}, {
+  version: 7,
+  sql: `
+    alter table job_sources add column company_id text references companies(id) on delete cascade;
+    alter table job_sources add column career_source_id text references company_career_sources(id) on delete cascade;
+    alter table job_sources add column last_seen_at text;
+    alter table job_sources add column missing_complete_scans integer not null default 0 check (missing_complete_scans >= 0);
+    alter table jobs add column lifecycle_status text not null default 'active' check (lifecycle_status in ('active', 'possibly_expired', 'closed'));
+    update jobs set lifecycle_status = 'closed' where status = 'expired';
+    create index job_sources_career_lifecycle on job_sources(career_source_id, missing_complete_scans, source_job_id);
+  `,
 }];

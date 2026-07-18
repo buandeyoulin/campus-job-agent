@@ -4,3 +4,7 @@ export * from "./career-source-classifier.js";
 export * from "./company-verifier.js";
 export * from "./company-discovery.js";
 export * from "./brave-company-discovery.js";
+export * from "./career-source-adapter.js";
+export * from "./jsonld-job-adapter.js";
+export * from "./html-career-job-adapter.js";
+export * from "./official-json-job-adapter.js";

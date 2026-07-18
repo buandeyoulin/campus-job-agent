@@ -5,6 +5,7 @@
     "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src",
+    "lib": ["ES2024"],
     "types": ["node"]
   },
   "include": ["src/**/*.ts"]

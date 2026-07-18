@@ -12,6 +12,7 @@ import { registerApplicationsRoutes } from "./applications-routes.js";
 import type { ApplicationsService } from "./applications-service.js";
 import { registerCompanyDirectoryRoutes } from "./company-directory-routes.js";
 import type { CompanyDirectoryService } from "./company-directory-service.js";
+import type { CompanyJobSyncService } from "./company-job-sync-service.js";
 
 export const LOCAL_HOST = "127.0.0.1" as const;
 export const API_PORT = 4317;
@@ -24,6 +25,7 @@ export interface AppDependencies {
   matches?: MatchService;
   applications?: ApplicationsService;
   companies?: CompanyDirectoryService;
+  companyJobSync?: CompanyJobSyncService;
 }
 
 export function buildApp(dependencies?: AppDependencies) {
@@ -35,7 +37,7 @@ export function buildApp(dependencies?: AppDependencies) {
     registerOnboardingRoutes(app, dependencies.onboarding);
     if (dependencies.resumeRoutes) registerResumeRoutes(app, dependencies.resumeRoutes);
   }
-  if (dependencies?.jobs) registerJobsRoutes(app, dependencies.jobs);
+  if (dependencies?.jobs) registerJobsRoutes(app, dependencies.jobs, dependencies.companyJobSync);
   if (dependencies?.matches) registerMatchingRoutes(app, dependencies.matches);
   if (dependencies?.applications) registerApplicationsRoutes(app, dependencies.applications);
   if (dependencies?.companies) registerCompanyDirectoryRoutes(app, dependencies.companies);

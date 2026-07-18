@@ -161,7 +161,7 @@
       "industries": ["eda"],
       "regions": ["中国"],
       "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.empyrean.com.cn/", "detail": "Official corporate homepage" }],
-      "careerSources": [{ "url": "https://www.empyrean.com.cn/article/job-list.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.empyrean.com.cn/", "detail": "Official recruitment listing" }] }]
+      "careerSources": [{ "url": "https://www.empyrean.com.cn/article/job-list.html", "kind": "html", "adapter": "empyrean-careers", "evidence": [{ "kind": "homepage_link", "url": "https://www.empyrean.com.cn/", "detail": "Official recruitment listing" }] }]
     },
     {
       "canonicalName": "国微思尔芯",
@@ -170,7 +170,7 @@
       "industries": ["eda", "fpga_prototyping"],
       "regions": ["中国"],
       "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.s2ceda.com/", "detail": "Official corporate domain" }],
-      "careerSources": [{ "url": "https://www.s2ceda.com/ch/career", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.s2ceda.com/", "detail": "Official join-us page with current recruitment listings" }] }]
+      "careerSources": [{ "url": "https://www.s2ceda.com/ch/career", "kind": "html", "adapter": "s2c-careers", "evidence": [{ "kind": "homepage_link", "url": "https://www.s2ceda.com/", "detail": "Official join-us page with current recruitment listings" }] }]
     },
     {
       "canonicalName": "壁仞科技",
