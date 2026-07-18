@@ -6,9 +6,9 @@ import { formatPhase0Report, shouldUpdateTrackedReport } from "./phase0-report.j
 describe("Phase 0 report", () => {
   it("lists probe outcomes without serializing secret-shaped fields", () => {
     const report = formatPhase0Report([
-      { name: "tencent", status: "pass", summary: "jobs returned", details: { jobCount: 5 }, checkedAt: "2026-07-16T00:00:00.000Z" },
+      { name: "codex", status: "pass", summary: "schema returned", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
     ]);
-    expect(report).toContain("| tencent | PASS | jobs returned |");
+    expect(report).toContain("| codex | PASS | schema returned |");
     expect(report).not.toMatch(/api.?key|authorization|secret/i);
   });
 
@@ -20,20 +20,20 @@ describe("Phase 0 report", () => {
 
   it("keeps the tracked report stable when only timestamps change", () => {
     const previous = formatPhase0Report([
-      { name: "tencent", status: "pass", summary: "jobs returned", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
+      { name: "codex", status: "pass", summary: "schema returned", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
     ]);
     const next = formatPhase0Report([
-      { name: "tencent", status: "pass", summary: "jobs returned", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
+      { name: "codex", status: "pass", summary: "schema returned", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
     ]);
     expect(shouldUpdateTrackedReport(previous, next)).toBe(false);
   });
 
   it("updates the tracked report when a probe outcome changes", () => {
     const previous = formatPhase0Report([
-      { name: "tencent", status: "pass", summary: "jobs returned", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
+      { name: "codex", status: "pass", summary: "schema returned", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
     ]);
     const next = formatPhase0Report([
-      { name: "tencent", status: "fail", summary: "request failed", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
+      { name: "codex", status: "fail", summary: "request failed", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
     ]);
     expect(shouldUpdateTrackedReport(previous, next)).toBe(true);
   });
@@ -50,7 +50,6 @@ describe("Phase 0 required gate", () => {
 
   it("requires Codex but permits optional provider skips", () => {
     const results = [
-      result("tencent", "pass"),
       result("codex", "pass"),
       result("openai-compatible", "skip"),
       result("ollama", "skip"),
@@ -58,13 +57,12 @@ describe("Phase 0 required gate", () => {
       result("resume-pdf", "pass"),
       result("resume-docx", "pass"),
     ];
-    expect([...REQUIRED_PHASE0_PROBES]).toEqual(["tencent", "codex", "pdf-output", "resume-pdf", "resume-docx"]);
+    expect([...REQUIRED_PHASE0_PROBES]).toEqual(["codex", "pdf-output", "resume-pdf", "resume-docx"]);
     expect(failedRequiredProbeNames(results)).toEqual([]);
   });
 
   it("fails when Codex is skipped", () => {
     const results = [
-      result("tencent", "pass"),
       result("codex", "skip"),
       result("pdf-output", "pass"),
       result("resume-pdf", "pass"),
@@ -74,6 +72,6 @@ describe("Phase 0 required gate", () => {
   });
 
   it("fails when required probe results are missing", () => {
-    expect(failedRequiredProbeNames([])).toEqual(["tencent", "codex", "pdf-output", "resume-pdf", "resume-docx"]);
+    expect(failedRequiredProbeNames([])).toEqual(["codex", "pdf-output", "resume-pdf", "resume-docx"]);
   });
 });

@@ -70,6 +70,38 @@ describe("storage database", () => {
     upgraded.close();
   });
 
+  it("removes Tencent sources while preserving jobs referenced by application history", async () => {
+    const root = await tempRoot();
+    const previous = await openDatabase({ dataRoot: root, migrations: MIGRATIONS.filter((migration) => migration.version <= 8) });
+    const jobs = new JobRepository(previous.db);
+    const untracked = jobs.upsert({ source: "tencent", sourceJobId: "untracked", sourceUrl: "https://careers.example.com/untracked", title: "未跟踪岗位", company: "示例", location: "", description: "历史公开岗位", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
+    const tracked = jobs.upsert({ source: "tencent", sourceJobId: "tracked", sourceUrl: "https://careers.example.com/tracked", title: "已跟踪岗位", company: "示例", location: "", description: "历史公开岗位", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
+    const mixedInput = { source: "official-company", sourceJobId: "official", sourceUrl: "https://official.example.com/mixed", title: "多来源岗位", company: "示例", location: "上海", description: "相同岗位内容", capturedAt: "2026-07-18T10:00:00.000Z" };
+    const mixed = jobs.upsert(mixedInput).job;
+    jobs.upsert({ ...mixedInput, source: "tencent", sourceJobId: "mixed-legacy", sourceUrl: "https://careers.example.com/mixed" });
+    jobs.recordScan({ source: "tencent", succeeded: true, message: "历史来源" });
+    new ApplicationRepository(previous.db).create(tracked.id);
+    previous.close();
+
+    const upgraded = await openDatabase({ dataRoot: root });
+    try {
+      expect(upgraded.db.prepare("select job_id from job_sources where source = 'tencent'").all()).toEqual([]);
+      expect(upgraded.db.prepare("select source from source_scans where source = 'tencent'").all()).toEqual([]);
+      expect(upgraded.db.prepare("select id from jobs where id = ?").get(untracked.id)).toBeUndefined();
+      expect(new JobRepository(upgraded.db).get(tracked.id)).toMatchObject({
+        id: tracked.id,
+        source: "historical",
+        status: "expired",
+        lifecycleStatus: "closed",
+        sources: [expect.objectContaining({ source: "historical" })],
+      });
+      expect(new JobRepository(upgraded.db).list({ keyword: "", city: "", source: "", status: "active", page: 1, pageSize: 100 }).jobs.map((job) => job.id)).not.toContain(tracked.id);
+      expect(upgraded.db.prepare("select id, source from jobs where id = ?").get(mixed.id)).toMatchObject({ id: mixed.id, source: "official-company" });
+    } finally {
+      upgraded.close();
+    }
+  });
+
   it("rolls back a failed migration and returns a sanitized error", async () => {
     const root = await tempRoot();
     const first = await openDatabase({ dataRoot: root });

@@ -5,8 +5,6 @@ import { PreferencesCard } from "./components/PreferencesCard";
 import { ProfileCard } from "./components/ProfileCard";
 import { ResumePanel } from "./components/ResumePanel";
 import { FactsPanel } from "./components/FactsPanel";
-import { JobsWorkspace } from "./components/JobsWorkspace";
-import { browserJobsApi, type JobsApi } from "./jobs-api";
 import { browserCompanyDirectoryApi, type CompanyDirectoryApi } from "./company-directory-api";
 import { CompanyDirectoryWorkspace } from "./components/CompanyDirectoryWorkspace";
 import { browserCareerOpsApi, type CareerOpsApi } from "./career-ops-api";
@@ -30,12 +28,11 @@ function errorMessage(error: unknown): string {
 
 export interface AppProps {
   api?: OnboardingApi;
-  jobsApi?: JobsApi;
   companyDirectoryApi?: CompanyDirectoryApi;
   careerOpsApi?: CareerOpsApi;
 }
 
-export function App({ api = browserOnboardingApi, jobsApi, companyDirectoryApi, careerOpsApi }: AppProps) {
+export function App({ api = browserOnboardingApi, companyDirectoryApi, careerOpsApi }: AppProps) {
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -98,7 +95,6 @@ export function App({ api = browserOnboardingApi, jobsApi, companyDirectoryApi, 
   }
 
   const profileExists = Boolean(snapshot.profile?.displayName);
-  const resolvedJobsApi = jobsApi ?? (api === browserOnboardingApi ? browserJobsApi : undefined);
   const resolvedCompanyDirectoryApi = companyDirectoryApi ?? (api === browserOnboardingApi ? browserCompanyDirectoryApi : undefined);
   const resolvedCareerOpsApi = careerOpsApi ?? (api === browserOnboardingApi ? browserCareerOpsApi : undefined);
   const totalFacts = Object.values(snapshot.factCounts).reduce((sum, count) => sum + count, 0);
@@ -176,7 +172,6 @@ export function App({ api = browserOnboardingApi, jobsApi, companyDirectoryApi, 
             api={api}
             onRefresh={async () => setSnapshot(await api.getSnapshot())}
           />
-          {resolvedJobsApi ? <JobsWorkspace api={resolvedJobsApi} /> : null}
           {resolvedCareerOpsApi ? <CareerOpsWorkspace api={resolvedCareerOpsApi} /> : null}
           {resolvedCompanyDirectoryApi ? <CompanyDirectoryWorkspace api={resolvedCompanyDirectoryApi} /> : null}
         </main>

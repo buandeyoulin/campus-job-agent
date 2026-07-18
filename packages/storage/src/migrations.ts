@@ -269,4 +269,38 @@ export const MIGRATIONS: readonly Migration[] = [{
       updated_at text not null
     );
   `,
+}, {
+  version: 9,
+  sql: `
+    delete from job_sources where source = 'tencent';
+    delete from source_scans where source = 'tencent';
+    update jobs set
+      source = (select source from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      source_job_id = (select source_job_id from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      source_url = (select source_url from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      title = (select title from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      company = (select company from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      location = (select location from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      description = (select description from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      posted_at = (select posted_at from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      last_captured_at = (select captured_at from job_sources where job_id = jobs.id order by source, source_job_id limit 1)
+      where source = 'tencent'
+        and exists (select 1 from job_sources where job_sources.job_id = jobs.id);
+    delete from jobs
+      where source = 'tencent'
+        and not exists (select 1 from job_sources where job_sources.job_id = jobs.id)
+        and not exists (select 1 from applications where applications.job_id = jobs.id);
+    insert into job_sources (job_id, source, source_job_id, source_url, title, company, location, description, posted_at, captured_at)
+      select id, 'historical', 'historical:' || id, source_url, title, company, location, description, posted_at, last_captured_at
+      from jobs
+      where source = 'tencent'
+        and exists (select 1 from applications where applications.job_id = jobs.id);
+    update jobs set
+      source = 'historical',
+      source_job_id = 'historical:' || id,
+      status = 'expired',
+      lifecycle_status = 'closed'
+      where source = 'tencent'
+        and exists (select 1 from applications where applications.job_id = jobs.id);
+  `,
 }];

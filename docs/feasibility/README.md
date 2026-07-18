@@ -37,4 +37,4 @@ Optional Ollama validation uses:
 - `OLLAMA_MODEL`
 - `OLLAMA_BASE_URL` (optional; defaults to `http://127.0.0.1:11434`)
 
-The command writes full sanitized probe data to `.local/phase0/results.json` and a reviewable summary to `docs/feasibility/phase-0-results.md`. Codex, Tencent, PDF generation, PDF parsing, and DOCX parsing must pass. Optional-provider skips do not fail the gate.
+The command writes full sanitized probe data to `.local/phase0/results.json` and a reviewable summary to `docs/feasibility/phase-0-results.md`. Codex, PDF generation, PDF parsing, and DOCX parsing must pass. Optional-provider skips do not fail the gate.

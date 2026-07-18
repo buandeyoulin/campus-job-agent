@@ -19,7 +19,7 @@ export function formatPhase0Report(results: ProbeResult[]): string {
     "",
     "## Interpretation",
     "",
-    "Tencent, Codex, PDF output, PDF parsing, and DOCX parsing are required before Phase 1. OpenAI-compatible and Ollama are optional and may report SKIP when not configured.",
+    "Codex, PDF output, PDF parsing, and DOCX parsing are required before Phase 1. OpenAI-compatible and Ollama are optional and may report SKIP when not configured.",
     "",
   ].join("\n");
 }

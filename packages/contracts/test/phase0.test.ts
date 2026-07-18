@@ -8,15 +8,15 @@ describe("Phase 0 contracts", () => {
 
   it("accepts a normalized public job", () => {
     const job = NormalizedJobSchema.parse({
-      source: "tencent",
+      source: "official-company",
       sourceJobId: "123",
-      sourceUrl: "https://careers.tencent.com/jobdesc.html?postId=123",
+      sourceUrl: "https://careers.example.com/jobs/123",
       title: "软件开发实习生",
-      company: "腾讯",
+      company: "示例科技",
       location: "深圳",
       description: "参与后端服务开发",
       capturedAt: "2026-07-16T00:00:00.000Z"
     });
-    expect(job.source).toBe("tencent");
+    expect(job.source).toBe("official-company");
   });
 });

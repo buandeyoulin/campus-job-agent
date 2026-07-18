@@ -6,7 +6,6 @@ import { CodexProvider, ensureCodexRuntimeDirectory, OpenAiCompatibleProvider, O
 import type { ProbeResult } from "@campus-job-agent/contracts";
 import { renderHtmlToPdf } from "@campus-job-agent/materials";
 import { parseResume } from "@campus-job-agent/profile";
-import { probeTencent } from "@campus-job-agent/sources";
 import { failedRequiredProbeNames } from "./phase0-gate.js";
 import { formatPhase0Report, shouldUpdateTrackedReport } from "./phase0-report.js";
 
@@ -16,8 +15,6 @@ const results: ProbeResult[] = [];
 const connectivity = z.object({ ok: z.literal(true) });
 
 await mkdir(localDir, { recursive: true });
-results.push(await probeTencent());
-
 async function aiProbe(name: string, provider: { generate<T>(request: { system: string; prompt: string; schema: z.ZodType<T> }): Promise<T> } | null): Promise<ProbeResult> {
   if (!provider) return { name, status: "skip", summary: `${name} environment configuration is missing`, details: {}, checkedAt: checkedAt() };
   try {

@@ -4,7 +4,6 @@ This report contains sanitized capability results only. It excludes credentials,
 
 | Probe | Status | Summary | Checked At |
 |---|---|---|---|
-| tencent | PASS | Tencent public API returned jobs | 2026-07-16T11:10:14.285Z |
 | codex | PASS | codex returned schema-valid JSON | 2026-07-16T11:10:26.639Z |
 | openai-compatible | SKIP | openai-compatible environment configuration is missing | 2026-07-16T11:10:26.639Z |
 | ollama | SKIP | ollama environment configuration is missing | 2026-07-16T11:10:26.639Z |
@@ -14,4 +13,4 @@ This report contains sanitized capability results only. It excludes credentials,
 
 ## Interpretation
 
-Tencent, Codex, PDF output, PDF parsing, and DOCX parsing are required before Phase 1. OpenAI-compatible and Ollama are optional and may report SKIP when not configured.
+Codex, PDF output, PDF parsing, and DOCX parsing are required before Phase 1. OpenAI-compatible and Ollama are optional and may report SKIP when not configured.

@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 const job = {
-  source: "tencent",
+  source: "legacy-public",
   sourceJobId: "123",
   sourceUrl: "https://careers.example.com/jobs/123",
   title: "前端开发实习生",
@@ -49,10 +49,10 @@ describe("job repository", () => {
     const repository = await setup();
     repository.upsert(job);
     repository.upsert({ ...job, sourceJobId: "456", sourceUrl: "https://careers.example.com/jobs/456", title: "后端开发实习生", location: "北京" });
-    repository.recordScan({ source: "tencent", succeeded: false, message: "公开接口暂时不可用" });
+    repository.recordScan({ source: "legacy-public", succeeded: false, message: "公开接口暂时不可用" });
 
-    expect(repository.list({ keyword: "前端", city: "上海", source: "tencent", status: "active", page: 1, pageSize: 20 }).total).toBe(1);
-    expect(repository.getSourceStatuses()).toEqual([expect.objectContaining({ source: "tencent", available: false })]);
+    expect(repository.list({ keyword: "前端", city: "上海", source: "legacy-public", status: "active", page: 1, pageSize: 20 }).total).toBe(1);
+    expect(repository.getSourceStatuses()).toEqual([expect.objectContaining({ source: "legacy-public", available: false })]);
   });
 
   it("requires two complete source absences before closing an official job", async () => {

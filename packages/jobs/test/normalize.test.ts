@@ -6,7 +6,7 @@ const capturedAt = "2026-07-17T10:00:00.000Z";
 describe("job normalization", () => {
   it("collapses harmless URL and whitespace variants into one fingerprint", () => {
     const first = normalizeJob({
-      source: "tencent",
+      source: "official-company",
       sourceJobId: "1",
       sourceUrl: "https://careers.example.com/jobs/1?utm_source=test#top",
       title: "  前端开发\n实习生 ",
@@ -24,7 +24,7 @@ describe("job normalization", () => {
 
   it("keeps distinct locations separate and preserves an existing id when merging", () => {
     const shanghai = normalizeJob({
-      source: "tencent",
+      source: "official-company",
       sourceJobId: "1",
       sourceUrl: "https://careers.example.com/jobs/1",
       title: "前端开发实习生",

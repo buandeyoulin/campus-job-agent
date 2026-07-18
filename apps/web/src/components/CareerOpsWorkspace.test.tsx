@@ -43,8 +43,8 @@ describe("CareerOpsWorkspace", () => {
     const client = api();
     vi.mocked(client.listApplications).mockResolvedValue([{ application, job, events: [], preparation: null }]);
     render(<CareerOpsWorkspace api={client} />);
-    await screen.findByRole("heading", { name: "求职进度" });
-    fireEvent.change(screen.getByLabelText("求职阶段"), { target: { value: "applied" } });
+    const status = await screen.findByLabelText("求职阶段");
+    fireEvent.change(status, { target: { value: "applied" } });
     fireEvent.change(screen.getByLabelText("进度备注"), { target: { value: "已在官网手动投递" } });
     fireEvent.click(screen.getByRole("button", { name: "保存进度" }));
     await waitFor(() => expect(client.updateApplication).toHaveBeenCalledWith(application.id, { status: "applied", note: "已在官网手动投递" }));

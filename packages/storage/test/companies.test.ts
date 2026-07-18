@@ -64,8 +64,6 @@ describe("owned company repository", () => {
       insert into company_career_sites values ('old-site','old-company','https://old.example/jobs','legacy','https://old.example/','pending','${NOW}','${NOW}');
       insert into jobs values ('kept','kept-fp','manual','m1','https://manual.example/1','Kept','Manual Co','','desc',null,'active','${NOW}','${NOW}');
       insert into job_sources values ('kept','manual','m1','https://manual.example/1','Kept','Manual Co','','desc',null,'${NOW}');
-      insert into jobs values ('tencent-kept','tencent-fp','tencent','t1','https://careers.tencent.example/1','Tencent Kept','Tencent','','desc',null,'active','${NOW}','${NOW}');
-      insert into job_sources values ('tencent-kept','tencent','t1','https://careers.tencent.example/1','Tencent Kept','Tencent','','desc',null,'${NOW}');
       insert into jobs values ('removed','removed-fp','discarded-source','x1','https://discarded.example/1','Removed','Discarded Co','','desc',null,'active','${NOW}','${NOW}');
       insert into job_sources values ('removed','discarded-source','x1','https://discarded.example/1','Removed','Discarded Co','','desc',null,'${NOW}');
     `);
@@ -73,7 +71,7 @@ describe("owned company repository", () => {
 
     const migrated = await openDatabase({ dataRoot: root });
     storages.push(migrated);
-    expect(migrated.db.prepare("select id from jobs order by id").all()).toEqual([{ id: "kept" }, { id: "tencent-kept" }]);
+    expect(migrated.db.prepare("select id from jobs order by id").all()).toEqual([{ id: "kept" }]);
     expect(migrated.db.prepare("select name from sqlite_master where type='table' and name='company_career_sites'").get()).toBeUndefined();
     expect(migrated.db.prepare("select count(*) as total from companies").get()).toEqual({ total: 0 });
   });
