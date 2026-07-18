@@ -21,12 +21,16 @@ npm run dev
 - 可选使用 Brave Search 发现新的公司官网；搜索结果不能直接变成岗位。
 - 从经过核验的公开公司招聘入口读取岗位，保留来源、健康状态和岗位生命周期。
 - 查看并筛选本机岗位库；通过普通链接前往公司官网后手动投递。
+- 先用确定性规则筛除黑名单、地点不符和已关闭岗位，再由 AI 基于已确认事实重新评分并解释优势与缺口。
+- 为跟踪中的岗位生成并保存定制简历 Markdown、面试问题、回答提纲和待补能力。
+- 人工记录已收藏、准备材料、已手动投递、测评、面试、Offer 等求职阶段，并保留事件历史。
 
 详细说明：
 
 - [自建公司岗位库](docs/owned-company-library.md)
 - [公开岗位发现与数据边界](docs/job-discovery.md)
 - [个人资料工作台](docs/profile-onboarding.md)
+- [AI 匹配、材料与人工进度](docs/career-ops.md)
 - [Phase 0 可行性探针](docs/feasibility/README.md)
 
 ## 验证

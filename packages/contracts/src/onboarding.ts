@@ -213,6 +213,8 @@ export const ApiErrorCodeSchema = z.enum([
   "resume_state_conflict",
   "file_cleanup_failed",
   "job_not_found",
+  "application_not_found",
+  "application_state_conflict",
   "company_not_found",
   "company_candidate_not_found",
   "career_source_not_found",

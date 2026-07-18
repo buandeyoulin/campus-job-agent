@@ -19,7 +19,7 @@ export const StoredJobSchema = NormalizedJobSchema.extend({
   id: z.uuid(),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   status: JobStatusSchema,
-  lifecycleStatus: JobLifecycleStatusSchema,
+  lifecycleStatus: JobLifecycleStatusSchema.default("active"),
   firstCapturedAt: z.iso.datetime(),
   lastCapturedAt: z.iso.datetime(),
   sources: z.array(JobSourceSchema).min(1).max(50),

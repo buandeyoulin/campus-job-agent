@@ -1,7 +1,7 @@
 export interface PreparationJob { title: string; company: string; description: string }
 export interface PreparationFact { status: "pending" | "confirmed" | "rejected"; content: { type: string; name?: string; evidence?: string; bullets?: string[] } }
 
-const REQUIREMENTS = ["TypeScript", "JavaScript", "React", "Vue", "Python", "SQL", "沟通能力"];
+const REQUIREMENTS = ["UVM", "SystemVerilog", "Verilog", "VCS", "Verdi", "形式验证", "覆盖率", "TypeScript", "JavaScript", "React", "Python", "SQL", "沟通能力"];
 const confirmed = (facts: PreparationFact[]) => facts.filter((fact) => fact.status === "confirmed");
 const names = (facts: PreparationFact[]) => confirmed(facts).flatMap((fact) => fact.content.name ? [fact.content.name] : []);
 const requirements = (job: PreparationJob) => REQUIREMENTS.filter((term) => job.description.toLocaleLowerCase().includes(term.toLocaleLowerCase()));

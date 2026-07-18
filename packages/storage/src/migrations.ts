@@ -256,4 +256,17 @@ export const MIGRATIONS: readonly Migration[] = [{
     update jobs set lifecycle_status = 'closed' where status = 'expired';
     create index job_sources_career_lifecycle on job_sources(career_source_id, missing_complete_scans, source_job_id);
   `,
+}, {
+  version: 8,
+  sql: `
+    create table application_preparations (
+      id text primary key,
+      application_id text not null unique references applications(id) on delete cascade,
+      tailored_resume_markdown text not null,
+      interview_questions_json text not null check (json_valid(interview_questions_json)),
+      gaps_json text not null check (json_valid(gaps_json)),
+      created_at text not null,
+      updated_at text not null
+    );
+  `,
 }];

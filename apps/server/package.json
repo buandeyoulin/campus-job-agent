@@ -12,6 +12,7 @@
     "@campus-job-agent/ai-providers": "0.0.0",
     "@campus-job-agent/contracts": "0.0.0",
     "@campus-job-agent/matching": "0.0.0",
+    "@campus-job-agent/materials": "0.0.0",
     "@campus-job-agent/profile": "0.0.0",
     "@campus-job-agent/sources": "0.0.0",
     "@campus-job-agent/storage": "0.0.0",

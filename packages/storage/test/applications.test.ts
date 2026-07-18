@@ -18,5 +18,16 @@ describe("application repository", () => {
     expect(applications.create(job.id).id).toBe(saved.id);
     expect(applied).toMatchObject({ status: "applied", note: "已手动投递" });
     expect(applications.events(saved.id)).toHaveLength(2);
+    const preparation = applications.savePreparation(saved.id, {
+      tailoredResumeMarkdown: "# 定制简历\n\n只包含已确认事实",
+      interviewQuestions: [
+        { question: "请介绍项目", answerOutline: "按 STAR 展开", evidence: ["项目事实"] },
+        { question: "如何验证设计", answerOutline: "说明验证计划", evidence: ["验证技能"] },
+        { question: "为何选择岗位", answerOutline: "连接岗位要求", evidence: [] },
+      ],
+      gaps: ["尚未确认形式验证经历"],
+    });
+    expect(applications.getPreparation(saved.id)).toEqual(preparation);
+    expect(applications.list()).toEqual([applied]);
   });
 });

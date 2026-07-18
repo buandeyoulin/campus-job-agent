@@ -69,8 +69,8 @@ export async function createProductionServices(
     const files = new ResumeFileStore(paths.root);
     const onboarding = new OnboardingService({ profiles, facts, resumes });
     const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
-    const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
-    const applications = new ApplicationsService(applicationsRepository);
+    const matches = new MatchService({ profiles, facts, jobs: jobsRepository, provider });
+    const applications = new ApplicationsService({ repository: applicationsRepository, jobs: jobsRepository, profiles, facts, provider, outputRoot: paths.generatedDir });
     const braveKey = environment.BRAVE_SEARCH_API_KEY?.trim();
     const companies = new CompanyDirectoryService({
       repository: companiesRepository,
