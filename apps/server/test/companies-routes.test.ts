@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { CompanyDirectoryListSchema } from "@campus-job-agent/contracts";
+import { CompanyListSchema } from "@campus-job-agent/contracts";
 import { CompanyRepository, openDatabase, type StorageDatabase } from "@campus-job-agent/storage";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
@@ -39,6 +39,6 @@ describe("company directory routes", () => {
     expect(scan.statusCode).toBe(404);
 
     const listed = await app.inject({ method: "GET", url: "/api/companies?keyword=Semiconductor" });
-    expect(CompanyDirectoryListSchema.parse(listed.json())).toMatchObject({ total: 0 });
+    expect(CompanyListSchema.parse(listed.json())).toMatchObject({ total: 0 });
   });
 });

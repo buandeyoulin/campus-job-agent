@@ -162,4 +162,82 @@ export const MIGRATIONS: readonly Migration[] = [{
     );
     create index company_career_sites_company on company_career_sites(company_id, last_discovered_at desc);
   `,
+}, {
+  version: 5,
+  sql: `
+    drop table company_career_sites;
+    drop table companies;
+
+    create table companies (
+      id text primary key,
+      normalized_name text not null,
+      canonical_name text not null,
+      aliases_json text not null check (json_valid(aliases_json)),
+      official_domain text not null unique,
+      industries_json text not null check (json_valid(industries_json)),
+      regions_json text not null check (json_valid(regions_json)),
+      origin text not null check (origin in ('seed', 'discovery', 'manual')),
+      status text not null check (status in ('active', 'paused', 'invalid')),
+      verification_score integer not null check (verification_score between 0 and 100),
+      verification_evidence_json text not null check (json_valid(verification_evidence_json)),
+      verified_at text not null,
+      created_at text not null,
+      updated_at text not null
+    );
+
+    create table company_candidates (
+      id text primary key,
+      normalized_name text not null,
+      canonical_name text not null,
+      candidate_domain text not null unique,
+      homepage_url text not null,
+      origin text not null check (origin in ('discovery', 'manual')),
+      status text not null check (status in ('pending', 'quarantined', 'verified', 'rejected')),
+      verification_score integer not null check (verification_score between 0 and 100),
+      evidence_json text not null check (json_valid(evidence_json)),
+      failure_reason text,
+      retry_count integer not null default 0 check (retry_count >= 0),
+      next_retry_at text,
+      created_at text not null,
+      updated_at text not null
+    );
+
+    create table company_career_sources (
+      id text primary key,
+      company_id text not null references companies(id) on delete cascade,
+      canonical_url text not null,
+      kind text not null check (kind in ('ats_api', 'json_api', 'json_ld', 'sitemap', 'html', 'custom')),
+      adapter text not null,
+      status text not null check (status in ('pending', 'active', 'backoff', 'unavailable')),
+      health_score integer not null check (health_score between 0 and 100),
+      last_success_at text,
+      last_failure_at text,
+      last_complete_sync_at text,
+      next_sync_at text,
+      backoff_until text,
+      consecutive_failures integer not null default 0 check (consecutive_failures >= 0),
+      last_error text,
+      created_at text not null,
+      updated_at text not null,
+      unique(company_id, canonical_url)
+    );
+
+    create index companies_name on companies(normalized_name);
+    create index company_candidates_status on company_candidates(status, updated_at desc);
+    create index company_career_sources_due on company_career_sources(status, next_sync_at);
+
+    delete from job_sources where source not in ('tencent', 'manual');
+    delete from jobs where not exists (select 1 from job_sources where job_sources.job_id = jobs.id);
+    update jobs set
+      source = (select source from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      source_job_id = (select source_job_id from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      source_url = (select source_url from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      title = (select title from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      company = (select company from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      location = (select location from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      description = (select description from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      posted_at = (select posted_at from job_sources where job_id = jobs.id order by source, source_job_id limit 1),
+      last_captured_at = (select captured_at from job_sources where job_id = jobs.id order by source, source_job_id limit 1);
+    delete from source_scans where source not in ('tencent', 'manual');
+  `,
 }];

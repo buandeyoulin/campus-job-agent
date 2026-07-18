@@ -1,13 +1,13 @@
 import {
   ApiErrorSchema,
-  CompanyDirectoryListQuerySchema,
-  CompanyDirectoryListSchema,
-  type CompanyDirectoryList,
-  type CompanyDirectoryListQuery,
+  CompanyListQuerySchema,
+  CompanyListSchema,
+  type CompanyList,
+  type CompanyListQuery,
 } from "@campus-job-agent/contracts";
 
 export interface CompanyDirectoryApi {
-  list(query: CompanyDirectoryListQuery): Promise<CompanyDirectoryList>;
+  list(query: CompanyListQuery): Promise<CompanyList>;
 }
 
 async function request(path: string, init?: RequestInit): Promise<unknown> {
@@ -19,9 +19,9 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
 
 export const browserCompanyDirectoryApi: CompanyDirectoryApi = {
   async list(query) {
-    const input = CompanyDirectoryListQuerySchema.parse(query);
+    const input = CompanyListQuerySchema.parse(query);
     const search = new URLSearchParams();
     for (const [key, value] of Object.entries(input)) search.set(key, String(value));
-    return CompanyDirectoryListSchema.parse(await request(`/api/companies?${search.toString()}`));
+    return CompanyListSchema.parse(await request(`/api/companies?${search.toString()}`));
   },
 };
