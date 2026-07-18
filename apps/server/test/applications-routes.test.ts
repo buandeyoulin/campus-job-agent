@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -24,7 +24,7 @@ describe("application routes", () => {
     const generate = vi.fn(async () => ({
       selectedFactIds: [confirmed.id],
       interviewQuestions: [
-        { question: "如何搭建 UVM 环境？", focus: "从组件和 phase 说明", factIds: [confirmed.id] },
+        { question: "如何搭建 UVM 环境？", focus: "虚构：带领十人团队完成项目", factIds: [confirmed.id] },
         { question: "如何完成覆盖率收敛？", focus: "解释计划、缺口和回归", factIds: [confirmed.id] },
         { question: "为什么选择本岗位？", focus: "连接专业与验证经历", factIds: [confirmed.id] },
       ],
@@ -38,6 +38,7 @@ describe("application routes", () => {
     expect(created.statusCode).toBe(201);
     const prepared = await app.inject({ method: "POST", url: `/api/applications/${applicationId}/prepare`, headers: { origin: ORIGIN }, payload: {} });
     expect(prepared.json()).toMatchObject({ tailoredResumeMarkdown: expect.stringContaining("UVM"), interviewQuestions: expect.any(Array), gaps: ["尚无形式验证事实"] });
+    expect(JSON.stringify(prepared.json())).not.toContain("带领十人团队");
     const pdf = await app.inject({ method: "GET", url: `/api/applications/${applicationId}/resume.pdf` });
     expect(pdf.statusCode).toBe(200);
     expect(pdf.headers["content-type"]).toContain("application/pdf");
@@ -67,5 +68,29 @@ describe("application routes", () => {
     expect(response.statusCode).toBe(502);
     expect(response.json()).toMatchObject({ error: { code: "ai_output_invalid" } });
     expect(repository.getPreparation(application.id)).toBeNull();
+  });
+
+  it("does not fail preparation when a legacy PDF cache cannot be removed", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-application-cache-")); roots.push(root);
+    const storage = await openDatabase({ dataRoot: root }); storages.push(storage);
+    const jobs = new JobRepository(storage.db); const profiles = new ProfileRepository(storage.db); const facts = new FactRepository(storage.db); const repository = new ApplicationRepository(storage.db);
+    profiles.saveProfile({ displayName: "Ray", email: "", phone: "", currentCity: "", degree: "本科", major: "微电子", graduationDate: "2027-06" });
+    const confirmed = facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm-cache", content: { type: "skill", name: "UVM", category: "验证", evidence: "完成验证项目" } });
+    const job = jobs.upsert({ source: "manual", sourceJobId: "cache", sourceUrl: "https://careers.example.com/cache", title: "验证工程师", company: "示例", location: "", description: "UVM", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
+    const application = repository.create(job.id);
+    const outputRoot = path.join(root, "generated");
+    await mkdir(path.join(outputRoot, `${application.id}-tailored-resume.pdf`, "locked"), { recursive: true });
+    const generate = vi.fn(async () => ({
+      selectedFactIds: [confirmed.id],
+      interviewQuestions: [1, 2, 3].map((index) => ({ question: `问题 ${index}`, focus: "虚构内容", factIds: [confirmed.id] })),
+      gaps: [],
+    }));
+    const service = new ApplicationsService({ repository, jobs, profiles, facts, provider: { generate } as never, outputRoot, renderResumePdf: async () => Buffer.from("%PDF-fresh") });
+    const app = buildApp({ applications: service, allowedOrigins: new Set([ORIGIN]) }); apps.push(app);
+
+    const response = await app.inject({ method: "POST", url: `/api/applications/${application.id}/prepare`, headers: { origin: ORIGIN }, payload: {} });
+
+    expect(response.statusCode).toBe(200);
+    expect(repository.getPreparation(application.id)).not.toBeNull();
   });
 });

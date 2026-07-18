@@ -13,7 +13,8 @@ import {
 import type { StructuredAiProvider } from "@campus-job-agent/ai-providers";
 import { renderHtmlToPdf } from "@campus-job-agent/materials";
 import type { ApplicationRepository, FactRepository, JobRepository, ProfileRepository } from "@campus-job-agent/storage";
-import { readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { ApiFailure } from "./errors.js";
@@ -23,7 +24,6 @@ const PreparationPlanSchema = z.object({
   selectedFactIds: z.array(z.uuid()).min(1).max(50),
   interviewQuestions: z.array(z.object({
     question: z.string().trim().min(1).max(1_000),
-    focus: z.string().trim().min(1).max(1_000),
     factIds: z.array(z.uuid()).min(1).max(10),
   }).strict()).min(3).max(20),
   gaps: z.array(z.string().trim().min(1).max(500)).max(20),
@@ -94,12 +94,19 @@ export class ApplicationsService {
       tailoredResumeMarkdown,
       interviewQuestions: plan.interviewQuestions.map((item) => {
         const evidence = [...new Set(item.factIds)].map((factId) => factMap.get(factId)!);
-        return { question: item.question, answerOutline: `回答重点：${item.focus}\n仅基于以下已确认事实组织回答：${evidence.join("；")}`, evidence };
+        return {
+          question: item.question,
+          answerOutline: [
+            "仅基于以下已确认事实作答：",
+            ...evidence.map((summary) => `- ${summary}`),
+            "建议结构：背景与任务 → 本人行动 → 已确认结果 → 与目标岗位的关联。未在事实中出现的数字、职责或成果不要补充。",
+          ].join("\n"),
+          evidence,
+        };
       }),
       gaps: plan.gaps,
     });
     const saved = this.dependencies.repository.savePreparation(id, content);
-    if (this.dependencies.outputRoot) await rm(path.join(this.dependencies.outputRoot, `${id}-tailored-resume.pdf`), { force: true });
     return saved;
   }
   async resumePdf(id: string): Promise<Buffer> {
@@ -111,7 +118,8 @@ export class ApplicationsService {
       catch { throw new ApiFailure(503, "pdf_generation_failed", "PDF 生成失败，请稍后重试或下载 Markdown"); }
     }
     if (!this.dependencies.outputRoot) throw new Error("Generated material directory is unavailable");
-    const outputPath = path.join(this.dependencies.outputRoot, `${id}-tailored-resume.pdf`);
+    const contentVersion = createHash("sha256").update(preparation.tailoredResumeMarkdown).digest("hex").slice(0, 16);
+    const outputPath = path.join(this.dependencies.outputRoot, `${id}-${contentVersion}-tailored-resume.pdf`);
     try { return await readFile(outputPath); }
     catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw new ApiFailure(503, "pdf_generation_failed", "PDF 读取失败，请稍后重试或下载 Markdown"); }
     const escaped = preparation.tailoredResumeMarkdown.replace(/[&<>]/g, (value) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[value]!);
