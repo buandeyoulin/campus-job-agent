@@ -10,7 +10,7 @@ async function manifest() {
     permissions?: string[];
     host_permissions: string[];
     background: { service_worker: string };
-    content_scripts: Array<{ js: string[]; css?: string[]; world?: string }>;
+    content_scripts: Array<{ matches: string[]; js: string[]; css?: string[]; world?: string }>;
   };
 }
 
@@ -43,6 +43,16 @@ describe("OfferBiu bridge extension security", () => {
     expect(main?.js).toEqual(["core.js", "page-bridge.js"]);
     expect(isolated?.js).toEqual(["core.js", "content.js"]);
     expect(value.background.service_worker).toBe("background.js");
+  });
+
+  it("runs on both the directory URL and the signed-in recruitment route", async () => {
+    const value = await manifest();
+    for (const script of value.content_scripts) {
+      expect(script.matches).toEqual([
+        "https://offerbiu.com/companies/*",
+        "https://offerbiu.com/jobs/new/*",
+      ]);
+    }
   });
 
   it("does not forward request headers through either bridge channel", async () => {

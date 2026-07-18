@@ -7,7 +7,7 @@
 1. 在项目根目录运行 `npm run dev`，确认本地界面和 API 分别位于 `http://127.0.0.1:4318` 与 `http://127.0.0.1:4317`。
 2. 在 Chrome 打开 `chrome://extensions`，启用“开发者模式”。
 3. 点击“加载已解压的扩展程序”，选择 `apps/offerbiu-bridge/extension`。
-4. 用同一个 Chrome 会话登录 OfferBiu，然后打开 `https://offerbiu.com/companies/`。
+4. 用同一个 Chrome 会话登录 OfferBiu，然后打开 `https://offerbiu.com/companies/`；如果登录后跳转到 `https://offerbiu.com/jobs/new/`，扩展也会在该招聘信息页面运行。
 5. 刷新一次页面并等待右下角面板显示“会话已就绪”。只有 OfferBiu 自己成功加载过一个非预览岗位响应后，同步按钮才会启用。
 6. 点击“同步到本机岗位库”，保持页面打开，直到面板显示完成数量。
 7. 回到 Campus Job Agent 岗位库，按来源 `offerbiu` 检索并核对数量。

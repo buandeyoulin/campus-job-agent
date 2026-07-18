@@ -12,13 +12,19 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://offerbiu.com/companies/*"],
+      "matches": [
+        "https://offerbiu.com/companies/*",
+        "https://offerbiu.com/jobs/new/*"
+      ],
       "js": ["core.js", "page-bridge.js"],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["https://offerbiu.com/companies/*"],
+      "matches": [
+        "https://offerbiu.com/companies/*",
+        "https://offerbiu.com/jobs/new/*"
+      ],
       "js": ["core.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
