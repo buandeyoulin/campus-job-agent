@@ -42,6 +42,45 @@ export const OfferBiuVisibleImportSchema = z.object({
 });
 export type OfferBiuVisibleImport = z.infer<typeof OfferBiuVisibleImportSchema>;
 
+const BridgeText = z.string().trim().min(1).max(2_000);
+const BridgeOptionalText = z.union([z.string().trim().max(2_000), z.null()]).optional();
+const BridgeOptionalUrl = z.union([z.url(), z.null()]).optional();
+export const OfferBiuBridgeRecordSchema = z.object({
+  id: z.string().trim().min(1).max(300),
+  companyName: z.string().trim().min(1).max(500),
+  companyNature: BridgeOptionalText,
+  industry: BridgeOptionalText,
+  recruitType: BridgeOptionalText,
+  targetYears: z.array(z.number().int().min(2000).max(2100)).max(20).optional(),
+  locations: z.array(z.string().trim().min(1).max(300)).max(100).optional(),
+  positionsText: BridgeText,
+  deadlineText: BridgeOptionalText,
+  announcementUrl: BridgeOptionalUrl,
+  applyUrl: BridgeOptionalUrl,
+  examPolicy: BridgeOptionalText,
+  noteText: BridgeOptionalText,
+  sourceUpdatedAt: z.union([z.iso.datetime(), z.null()]).optional(),
+  seasonYear: z.number().int().min(2000).max(2100).optional(),
+});
+export type OfferBiuBridgeRecord = z.infer<typeof OfferBiuBridgeRecordSchema>;
+
+export const OfferBiuBridgeBatchSchema = z.object({
+  syncId: z.uuid(),
+  seasonYear: z.number().int().min(2000).max(2100),
+  page: z.number().int().min(0).max(9_999),
+  totalPages: z.number().int().min(1).max(10_000),
+  records: z.array(OfferBiuBridgeRecordSchema).min(1).max(50),
+}).refine((value) => value.page < value.totalPages, {
+  path: ["page"],
+  message: "Page must be lower than totalPages",
+});
+export type OfferBiuBridgeBatch = z.infer<typeof OfferBiuBridgeBatchSchema>;
+
+export const OfferBiuBridgeSessionSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+export type OfferBiuBridgeSession = z.infer<typeof OfferBiuBridgeSessionSchema>;
+
 const OptionalFilter = z.string().trim().max(100).default("");
 export const JobListQuerySchema = z.object({
   keyword: OptionalFilter,

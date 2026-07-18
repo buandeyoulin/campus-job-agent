@@ -24,10 +24,8 @@
 **Files:**
 - Modify: `packages/contracts/src/jobs.ts`
 - Modify: `packages/contracts/src/index.ts`
-- Create: `apps/offerbiu-bridge/package.json`
 - Create: `apps/offerbiu-bridge/extension/core.js`
 - Create: `apps/offerbiu-bridge/test/core.test.ts`
-- Create: `apps/offerbiu-bridge/scripts/verify-extension.mjs`
 
 **Interfaces:**
 - Produces `OfferBiuBridgeBatchSchema` with `{ syncId, seasonYear, page, totalPages, records }`.
@@ -83,13 +81,9 @@ The record schema must enumerate only the approved fields, use `.strip()`, cap o
 })(globalThis);
 ```
 
-- [ ] **Step 4: Add a manifest verifier**
+- [ ] **Step 4: Run the focused tests**
 
-`verify-extension.mjs` must parse the manifest, assert Manifest V3, assert only the two approved host patterns, assert every referenced file exists, and scan all extension JavaScript for `chrome.cookies`, `document.cookie`, `localStorage`, and `sessionStorage`.
-
-- [ ] **Step 5: Run the focused tests and workspace build**
-
-Run: `npx vitest run packages/contracts/test/jobs.test.ts apps/offerbiu-bridge/test/core.test.ts && npm run build -w @campus-job-agent/offerbiu-bridge`
+Run: `npx vitest run packages/contracts/test/jobs.test.ts apps/offerbiu-bridge/test/core.test.ts`
 
 Expected: PASS.
 
@@ -158,6 +152,8 @@ Expected: PASS.
 
 **Files:**
 - Create: `apps/offerbiu-bridge/extension/manifest.json`
+- Create: `apps/offerbiu-bridge/package.json`
+- Create: `apps/offerbiu-bridge/scripts/verify-extension.mjs`
 - Create: `apps/offerbiu-bridge/extension/page-bridge.js`
 - Create: `apps/offerbiu-bridge/extension/content.js`
 - Create: `apps/offerbiu-bridge/extension/background.js`
@@ -203,6 +199,8 @@ The content script creates one fixed panel with status text, progress and a star
 Run: `npx vitest run apps/offerbiu-bridge/test/core.test.ts apps/offerbiu-bridge/test/security.test.ts && npm run build -w @campus-job-agent/offerbiu-bridge`
 
 Expected: PASS with no forbidden API references.
+
+`verify-extension.mjs` must parse the manifest, assert Manifest V3, assert only the two approved host patterns, assert every referenced file exists, and scan all extension JavaScript for `chrome.cookies`, `document.cookie`, `localStorage`, and `sessionStorage`.
 
 ### Task 4: Documentation, full verification and signed-in runtime check
 
