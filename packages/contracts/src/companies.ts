@@ -185,6 +185,20 @@ export const CandidateVerificationRunResultSchema = z.object({
   completedAt: TimestampSchema,
 });
 export type CandidateVerificationRunResult = z.infer<typeof CandidateVerificationRunResultSchema>;
+export const CompanyDiscoveryRequestSchema = z.object({
+  queries: z.array(z.string().trim().min(1).max(200)).max(10).default([]),
+}).strict();
+export type CompanyDiscoveryRequest = z.infer<typeof CompanyDiscoveryRequestSchema>;
+export const CompanyDiscoveryRunResultSchema = z.object({
+  searched: z.number().int().nonnegative(),
+  candidatesCreated: z.number().int().nonnegative(),
+  candidatesUpdated: z.number().int().nonnegative(),
+  verified: z.number().int().nonnegative(),
+  quarantined: z.number().int().nonnegative(),
+  rejected: z.number().int().nonnegative(),
+  completedAt: TimestampSchema,
+});
+export type CompanyDiscoveryRunResult = z.infer<typeof CompanyDiscoveryRunResultSchema>;
 export const CompanySeedImportResultSchema = z.object({
   fetched: z.number().int().nonnegative(),
   created: z.number().int().nonnegative(),

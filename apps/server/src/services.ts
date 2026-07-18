@@ -12,7 +12,7 @@ import {
   resolveDataPaths,
   ResumeRepository,
 } from "@campus-job-agent/storage";
-import { fetchTencentJobs } from "@campus-job-agent/sources";
+import { BraveCompanyDiscovery, fetchTencentJobs } from "@campus-job-agent/sources";
 import { ExtractionJobRunner } from "./extraction-jobs.js";
 import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
@@ -67,7 +67,11 @@ export async function createProductionServices(
     const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
     const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
     const applications = new ApplicationsService(applicationsRepository);
-    const companies = new CompanyDirectoryService({ repository: companiesRepository });
+    const braveKey = environment.BRAVE_SEARCH_API_KEY?.trim();
+    const companies = new CompanyDirectoryService({
+      repository: companiesRepository,
+      ...(braveKey ? { discoveryProvider: new BraveCompanyDiscovery({ apiKey: braveKey }) } : {}),
+    });
     companies.importSeed();
     const runner = new ExtractionJobRunner({
       resumes,

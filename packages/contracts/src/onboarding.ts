@@ -217,6 +217,9 @@ export const ApiErrorCodeSchema = z.enum([
   "company_candidate_not_found",
   "career_source_not_found",
   "company_state_conflict",
+  "discovery_not_configured",
+  "discovery_rate_limited",
+  "discovery_unavailable",
   "source_unavailable",
   "internal_error",
 ]);
@@ -225,6 +228,7 @@ export const ApiErrorSchema = z.object({
   error: z.object({
     code: ApiErrorCodeSchema,
     message: z.string().min(1),
+    retryAt: z.iso.datetime().optional(),
   }),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;

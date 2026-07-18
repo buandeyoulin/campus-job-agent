@@ -7,6 +7,7 @@ export class ApiFailure extends Error {
     public readonly statusCode: number,
     public readonly code: ApiError["error"]["code"],
     message: string,
+    public readonly retryAt?: string,
   ) {
     super(message);
     this.name = "ApiFailure";
@@ -16,9 +17,11 @@ export class ApiFailure extends Error {
 export function installErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ApiFailure) {
-      return reply.code(error.statusCode).send({
-        error: { code: error.code, message: error.message },
-      });
+      return reply.code(error.statusCode).send({ error: {
+        code: error.code,
+        message: error.message,
+        ...(error.retryAt ? { retryAt: error.retryAt } : {}),
+      } });
     }
     if (error instanceof ZodError) {
       return reply.code(400).send({
