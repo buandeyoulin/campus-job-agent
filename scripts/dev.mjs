@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
+import { createNpmInvocation } from "./dev-invocation.mjs";
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const server = createNpmInvocation(["run", "dev", "-w", "@campus-job-agent/server"]);
+const web = createNpmInvocation(["run", "dev", "-w", "@campus-job-agent/web"]);
 const children = [
-  spawn(npm, ["run", "dev", "-w", "@campus-job-agent/server"], { stdio: "inherit" }),
-  spawn(npm, ["run", "dev", "-w", "@campus-job-agent/web"], { stdio: "inherit" }),
+  spawn(server.command, server.args, { stdio: "inherit" }),
+  spawn(web.command, web.args, { stdio: "inherit" }),
 ];
 
 let stopping = false;
