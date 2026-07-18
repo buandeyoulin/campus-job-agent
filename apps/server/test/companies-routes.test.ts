@@ -23,7 +23,7 @@ async function setup() {
   });
   const app = buildApp({ companies, allowedOrigins: new Set([ORIGIN]) });
   apps.push(app);
-  return app;
+  return { app, companies };
 }
 
 afterEach(async () => {
@@ -34,11 +34,22 @@ afterEach(async () => {
 
 describe("company directory routes", () => {
   it("returns 404 for an unknown company-directory scan", async () => {
-    const app = await setup();
+    const { app } = await setup();
     const scan = await app.inject({ method: "POST", url: "/api/companies/scan/unknown-source", headers: { origin: ORIGIN } });
     expect(scan.statusCode).toBe(404);
 
     const listed = await app.inject({ method: "GET", url: "/api/companies?keyword=Semiconductor" });
     expect(CompanyListSchema.parse(listed.json())).toMatchObject({ total: 0 });
+  });
+
+  it("imports the reviewed seed idempotently and exposes 20 active companies", async () => {
+    const { app, companies } = await setup();
+    expect(companies.importSeed()).toMatchObject({ fetched: 20, created: 20, updated: 0 });
+    expect(companies.importSeed()).toMatchObject({ fetched: 20, created: 0, updated: 20 });
+
+    const listed = await app.inject({ method: "GET", url: "/api/companies?status=active&pageSize=100" });
+    const result = CompanyListSchema.parse(listed.json());
+    expect(result.total).toBe(20);
+    expect(result.companies.every((company) => company.origin === "seed" && company.verificationScore === 100)).toBe(true);
   });
 });

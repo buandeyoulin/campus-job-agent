@@ -68,6 +68,7 @@ export async function createProductionServices(
     const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
     const applications = new ApplicationsService(applicationsRepository);
     const companies = new CompanyDirectoryService({ repository: companiesRepository });
+    companies.importSeed();
     const runner = new ExtractionJobRunner({
       resumes,
       facts,

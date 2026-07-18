@@ -75,6 +75,7 @@ export const CompanyCareerSourceSchema = z.object({
   canonicalUrl: PublicHttpUrlSchema,
   kind: CareerSourceKindSchema,
   adapter: z.string().trim().min(1).max(100),
+  verificationEvidence: EvidenceListSchema,
   status: CareerSourceStatusSchema,
   healthScore: z.number().int().min(0).max(100),
   lastSuccessAt: TimestampSchema.nullable(),
@@ -123,8 +124,9 @@ export const CompanyCareerSourceInputSchema = z.object({
   canonicalUrl: PublicHttpUrlSchema,
   kind: CareerSourceKindSchema,
   adapter: z.string().trim().min(1).max(100),
+  verificationEvidence: EvidenceListSchema.default([]),
 }).strict();
-export type CompanyCareerSourceInput = z.infer<typeof CompanyCareerSourceInputSchema>;
+export type CompanyCareerSourceInput = z.input<typeof CompanyCareerSourceInputSchema>;
 
 const OptionalFilter = z.string().trim().max(200).default("");
 const Pagination = {
@@ -166,6 +168,13 @@ export type CompanyCandidateList = z.infer<typeof CompanyCandidateListSchema>;
 export const CompanyMutationResultSchema = z.object({ company: CompanySchema, created: z.boolean() });
 export const CompanyCandidateMutationResultSchema = z.object({ candidate: CompanyCandidateSchema, created: z.boolean() });
 export const CompanyCareerSourceMutationResultSchema = z.object({ source: CompanyCareerSourceSchema, created: z.boolean() });
+export const CompanySeedImportResultSchema = z.object({
+  fetched: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  completedAt: TimestampSchema,
+});
+export type CompanySeedImportResult = z.infer<typeof CompanySeedImportResultSchema>;
 export const SourceSyncOutcomeSchema = z.object({
   succeeded: z.boolean(),
   complete: z.boolean().default(false),

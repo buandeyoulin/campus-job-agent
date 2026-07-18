@@ -43,6 +43,7 @@ interface CandidateRow {
 }
 interface SourceRow {
   id: string; company_id: string; canonical_url: string; kind: string; adapter: string;
+  verification_evidence_json: string;
   status: string; health_score: number; last_success_at: string | null;
   last_failure_at: string | null; last_complete_sync_at: string | null;
   next_sync_at: string | null; backoff_until: string | null; consecutive_failures: number;
@@ -116,6 +117,7 @@ function toSource(row: SourceRow): CompanyCareerSource {
     canonicalUrl: row.canonical_url,
     kind: row.kind,
     adapter: row.adapter,
+    verificationEvidence: parseJson(row.verification_evidence_json),
     status: row.status,
     healthScore: row.health_score,
     lastSuccessAt: row.last_success_at,
@@ -133,6 +135,10 @@ function toSource(row: SourceRow): CompanyCareerSource {
 export class CompanyRepository {
   constructor(private readonly db: DatabaseSync, private readonly now: () => Date = () => new Date()) {}
 
+  transaction<T>(operation: () => T): T {
+    return withTransaction(this.db, operation);
+  }
+
   upsertSeed(value: SeedCompanyInput): { company: Company; created: boolean } {
     const input = SeedCompanyInputSchema.parse(value);
     const domain = normalizeDomain(input.officialDomain);
@@ -142,9 +148,9 @@ export class CompanyRepository {
       if (existing) {
         const aliases = unique([...(parseJson(existing.aliases_json) as string[]), ...input.aliases]);
         this.db.prepare(`update companies set canonical_name = ?, normalized_name = ?, aliases_json = ?, industries_json = ?, regions_json = ?,
-          verification_score = ?, verification_evidence_json = ?, updated_at = ? where id = ?`)
+          origin = 'seed', status = 'active', verification_score = ?, verification_evidence_json = ?, verified_at = ?, updated_at = ? where id = ?`)
           .run(input.canonicalName, normalizeCompanyName(input.canonicalName), JSON.stringify(aliases), JSON.stringify(input.industries),
-            JSON.stringify(input.regions), input.verificationScore, JSON.stringify(input.verificationEvidence), now, existing.id);
+            JSON.stringify(input.regions), input.verificationScore, JSON.stringify(input.verificationEvidence), now, now, existing.id);
         return { company: this.getCompany(existing.id)!, created: false };
       }
       const id = randomUUID();
@@ -224,15 +230,15 @@ export class CompanyRepository {
       const existing = this.db.prepare("select * from company_career_sources where company_id = ? and canonical_url = ?")
         .get(companyId, canonicalUrl) as SourceRow | undefined;
       if (existing) {
-        this.db.prepare("update company_career_sources set kind = ?, adapter = ?, updated_at = ? where id = ?")
-          .run(input.kind, input.adapter, now, existing.id);
+        this.db.prepare("update company_career_sources set kind = ?, adapter = ?, verification_evidence_json = ?, updated_at = ? where id = ?")
+          .run(input.kind, input.adapter, JSON.stringify(input.verificationEvidence), now, existing.id);
         return { source: this.getCareerSource(existing.id)!, created: false };
       }
       const id = randomUUID();
-      this.db.prepare(`insert into company_career_sources (id, company_id, canonical_url, kind, adapter, status, health_score,
+      this.db.prepare(`insert into company_career_sources (id, company_id, canonical_url, kind, adapter, verification_evidence_json, status, health_score,
         last_success_at, last_failure_at, last_complete_sync_at, next_sync_at, backoff_until, consecutive_failures, last_error, created_at, updated_at)
-        values (?, ?, ?, ?, ?, 'pending', 100, null, null, null, null, null, 0, null, ?, ?)`)
-        .run(id, companyId, canonicalUrl, input.kind, input.adapter, now, now);
+        values (?, ?, ?, ?, ?, ?, 'pending', 100, null, null, null, null, null, 0, null, ?, ?)`)
+        .run(id, companyId, canonicalUrl, input.kind, input.adapter, JSON.stringify(input.verificationEvidence), now, now);
       return { source: this.getCareerSource(id)!, created: true };
     });
   }

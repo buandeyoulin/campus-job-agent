@@ -17,6 +17,7 @@ export interface OpenDatabaseOptions {
 }
 
 export function withTransaction<T>(db: DatabaseSync, operation: () => T): T {
+  if (db.isTransaction) return operation();
   db.exec("begin immediate");
   try {
     const result = operation();

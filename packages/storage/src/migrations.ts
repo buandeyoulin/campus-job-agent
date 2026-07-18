@@ -240,4 +240,9 @@ export const MIGRATIONS: readonly Migration[] = [{
       last_captured_at = (select captured_at from job_sources where job_id = jobs.id order by source, source_job_id limit 1);
     delete from source_scans where source not in ('tencent', 'manual');
   `,
+}, {
+  version: 6,
+  sql: `
+    alter table company_career_sources add column verification_evidence_json text not null default '[]' check (json_valid(verification_evidence_json));
+  `,
 }];
