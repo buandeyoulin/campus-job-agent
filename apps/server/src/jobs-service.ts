@@ -1,5 +1,6 @@
 import {
   JobImportSchema,
+  OfferBiuBridgeBatchSchema,
   OfferBiuVisibleImportSchema,
   JobListQuerySchema,
   ScanResultSchema,
@@ -11,10 +12,11 @@ import {
   type SourceStatus,
   type StoredJob,
 } from "@campus-job-agent/contracts";
+import { mapOfferBiuPosting } from "@campus-job-agent/sources";
 import type { JobRepository } from "@campus-job-agent/storage";
 
 export class PublicSourceUnavailableError extends Error {
-  constructor() {
+  constructor(readonly source: string) {
     super("Public source unavailable");
     this.name = "PublicSourceUnavailableError";
   }
@@ -23,6 +25,7 @@ export class PublicSourceUnavailableError extends Error {
 export interface JobsServiceDependencies {
   repository: JobRepository;
   fetchTencent: () => Promise<NormalizedJob[]>;
+  fetchOfferBiu: () => Promise<NormalizedJob[]>;
   now?: () => Date;
 }
 
@@ -57,10 +60,23 @@ export class JobsService {
       discovered = await this.dependencies.fetchTencent();
     } catch {
       this.dependencies.repository.recordScan({ source: "tencent", succeeded: false, message: "腾讯公开职位来源暂时不可用" });
-      throw new PublicSourceUnavailableError();
+      throw new PublicSourceUnavailableError("tencent");
     }
     const result = this.persist("tencent", discovered);
     this.dependencies.repository.recordScan({ source: "tencent", succeeded: true, message: `已读取 ${result.fetched} 个公开岗位` });
+    return result;
+  }
+
+  async scanOfferBiu(): Promise<ScanResult> {
+    let discovered: NormalizedJob[];
+    try {
+      discovered = await this.dependencies.fetchOfferBiu();
+    } catch {
+      this.dependencies.repository.recordScan({ source: "offerbiu", succeeded: false, message: "OfferBiu 岗位源暂时不可用" });
+      throw new PublicSourceUnavailableError("offerbiu");
+    }
+    const result = this.persist("offerbiu", discovered);
+    this.dependencies.repository.recordScan({ source: "offerbiu", succeeded: true, message: `已读取 ${result.fetched} 条 OfferBiu 招聘信息` });
     return result;
   }
 
@@ -89,6 +105,15 @@ export class JobsService {
       capturedAt,
     }));
     return this.persist("offerbiu-authenticated", jobs);
+  }
+
+  importOfferBiuBridge(input: unknown): ScanResult {
+    const payload = OfferBiuBridgeBatchSchema.parse(input);
+    const capturedAt = this.now().toISOString();
+    const jobs = payload.records
+      .map((record) => mapOfferBiuPosting(record, capturedAt))
+      .filter((job): job is NormalizedJob => job !== null);
+    return this.persist("offerbiu", jobs);
   }
 
   private persist(source: string, values: NormalizedJob[]): ScanResult {

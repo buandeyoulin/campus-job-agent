@@ -28,7 +28,11 @@ async function setup() {
   roots.push(root);
   const storage = await openDatabase({ dataRoot: root });
   storages.push(storage);
-  const jobs = new JobsService({ repository: new JobRepository(storage.db), fetchTencent: async () => [job] });
+  const jobs = new JobsService({
+    repository: new JobRepository(storage.db),
+    fetchTencent: async () => [job],
+    fetchOfferBiu: async () => [{ ...job, source: "offerbiu", sourceJobId: "offerbiu-1" }],
+  });
   const app = buildApp({ jobs, allowedOrigins: new Set([ORIGIN]) });
   apps.push(app);
   return app;
@@ -49,6 +53,16 @@ describe("job discovery routes", () => {
     expect(ScanResultSchema.parse(scan.json())).toMatchObject({ source: "tencent", fetched: 1, created: 1 });
     const listed = await app.inject({ method: "GET", url: "/api/jobs?keyword=%E5%89%8D%E7%AB%AF&city=%E4%B8%8A%E6%B5%B7" });
     expect(JobListSchema.parse(listed.json())).toMatchObject({ total: 1, jobs: [expect.objectContaining({ title: "前端开发实习生" })] });
+  });
+
+  it("scans all OfferBiu recruitment records into the local job library", async () => {
+    const app = await setup();
+    const scan = await app.inject({ method: "POST", url: "/api/jobs/scan/offerbiu", headers: { origin: ORIGIN } });
+
+    expect(scan.statusCode).toBe(200);
+    expect(ScanResultSchema.parse(scan.json())).toMatchObject({ source: "offerbiu", fetched: 1, created: 1 });
+    const listed = await app.inject({ method: "GET", url: "/api/jobs?source=offerbiu" });
+    expect(JobListSchema.parse(listed.json())).toMatchObject({ total: 1 });
   });
 
   it("rejects a mutating scan without the configured loopback origin", async () => {

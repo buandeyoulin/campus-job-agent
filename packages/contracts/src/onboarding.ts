@@ -199,6 +199,7 @@ export type OperationAccepted = z.infer<typeof OperationAcceptedSchema>;
 export const ApiErrorCodeSchema = z.enum([
   "validation_failed",
   "origin_not_allowed",
+  "bridge_unauthorized",
   "resume_type_not_allowed",
   "resume_too_large",
   "resume_parse_failed",

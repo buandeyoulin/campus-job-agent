@@ -72,10 +72,26 @@
     return Array.from({ length: totalPages }, (_, page) => page);
   }
 
+  function summarizeImport(batch, result) {
+    if (!validateBatch(batch) || !result || typeof result !== "object" || Array.isArray(result)) return null;
+    const values = [result.fetched, result.created, result.updated];
+    if (!values.every((value) => Number.isInteger(value) && value >= 0)) return null;
+    const seen = batch.records.length;
+    if (result.fetched > seen || result.created + result.updated !== result.fetched) return null;
+    return {
+      seen,
+      imported: result.fetched,
+      created: result.created,
+      updated: result.updated,
+      skipped: seen - result.fetched,
+    };
+  }
+
   root.OfferBiuBridgeCore = Object.freeze({
     POSTING_FIELDS,
     pageNumbers,
     sanitizePosting,
+    summarizeImport,
     validateBatch,
   });
 })(globalThis);
