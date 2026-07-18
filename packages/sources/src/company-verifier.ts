@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import type { CompanyCandidate } from "@campus-job-agent/contracts";
+import type { Company, CompanyCandidate } from "@campus-job-agent/contracts";
 import { classifyCareerSource, type SourceEvidence } from "./career-source-classifier.js";
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -29,6 +29,7 @@ export interface CompanyVerifierOptions {
   fetcher?: typeof fetch;
   proposedCareerUrls?: string[];
   aliases?: string[];
+  onlyProposedCareerUrls?: boolean;
 }
 
 async function boundedText(response: Response): Promise<string> {
@@ -145,7 +146,7 @@ export async function verifyCompanyCandidate(candidate: CompanyCandidate, option
 
     const linked = extractCareerLinks(homepage.finalUrl, homepage.html);
     const proposed = (options.proposedCareerUrls ?? []).filter((url) => linked.includes(new URL(url).toString()));
-    const targets = [...new Set([...linked, ...proposed])].slice(0, 2);
+    const targets = [...new Set(options.onlyProposedCareerUrls ? proposed : [...linked, ...proposed])].slice(0, 2);
     if (targets.length > 0) {
       score += 20;
       evidence.push({ kind: "homepage_link", url: targets[0]!, detail: "Official homepage links to a recruitment entry" });
@@ -176,4 +177,34 @@ export async function verifyCompanyCandidate(candidate: CompanyCandidate, option
     const message = error instanceof Error ? error.message : "verification failed";
     return { status: "rejected", score: 0, canonicalName: candidate.canonicalName, officialDomain: candidate.candidateDomain, evidence: [...evidence, { kind: "negative_signal", url: candidate.homepageUrl, detail: message }], failureReason: message, careerSources: [] };
   }
+}
+
+export async function verifyCareerSourceForCompany(
+  company: Company,
+  canonicalUrl: string,
+  options: Pick<CompanyVerifierOptions, "fetcher"> = {},
+): Promise<VerificationCareerSource | null> {
+  const candidate: CompanyCandidate = {
+    id: company.id,
+    canonicalName: company.canonicalName,
+    normalizedName: company.canonicalName.toLocaleLowerCase(),
+    candidateDomain: company.officialDomain,
+    homepageUrl: `https://${company.officialDomain}/`,
+    origin: "manual",
+    status: "verified",
+    verificationScore: company.verificationScore,
+    evidence: company.verificationEvidence,
+    failureReason: null,
+    retryCount: 0,
+    nextRetryAt: null,
+    createdAt: company.createdAt,
+    updatedAt: company.updatedAt,
+  };
+  const decision = await verifyCompanyCandidate(candidate, {
+    ...options,
+    aliases: company.aliases,
+    proposedCareerUrls: [canonicalUrl],
+    onlyProposedCareerUrls: true,
+  });
+  return decision.status === "verified" && decision.careerSources.length === 1 ? decision.careerSources[0]! : null;
 }

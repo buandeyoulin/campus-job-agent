@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CompanyCandidate } from "@campus-job-agent/contracts";
-import { verifyCompanyCandidate } from "../src/index.js";
+import { verifyCareerSourceForCompany, verifyCompanyCandidate } from "../src/index.js";
 
 const candidate: CompanyCandidate = {
   id: "018a2c8a-51dc-7a81-a240-000000000001",
@@ -52,5 +52,16 @@ describe("company candidate verifier", () => {
     const decision = await verifyCompanyCandidate(aggregateCandidate, { fetcher });
     expect(decision).toMatchObject({ status: "rejected", score: 0 });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("accepts a manually proposed career entry only when the verified homepage links it", async () => {
+    const company = {
+      id: candidate.id, canonicalName: candidate.canonicalName, aliases: [], officialDomain: candidate.candidateDomain,
+      industries: [], regions: [], origin: "manual" as const, status: "active" as const, verificationScore: 90,
+      verificationEvidence: [], verifiedAt: candidate.createdAt, createdAt: candidate.createdAt, updatedAt: candidate.updatedAt,
+    };
+    const fetcher = vi.fn(async (url: string | URL | Request) => response(String(url), "<html><title>Example Semiconductor</title><body>Products</body></html>"));
+    await expect(verifyCareerSourceForCompany(company, "https://example.com/unlinked-jobs", { fetcher })).resolves.toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

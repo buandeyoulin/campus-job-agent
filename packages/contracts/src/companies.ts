@@ -151,8 +151,13 @@ export const CompanyCandidateListQuerySchema = z.object({
 });
 export type CompanyCandidateListQuery = z.infer<typeof CompanyCandidateListQuerySchema>;
 
+export const CompanyDirectoryEntrySchema = CompanySchema.extend({
+  careerSourceCount: z.number().int().nonnegative(),
+  jobCount: z.number().int().nonnegative(),
+});
+export type CompanyDirectoryEntry = z.infer<typeof CompanyDirectoryEntrySchema>;
 export const CompanyListSchema = z.object({
-  companies: z.array(CompanySchema),
+  companies: z.array(CompanyDirectoryEntrySchema),
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   pageSize: z.number().int().positive(),
@@ -169,6 +174,7 @@ export type CompanyCandidateList = z.infer<typeof CompanyCandidateListSchema>;
 export const CompanyMutationResultSchema = z.object({ company: CompanySchema, created: z.boolean() });
 export const CompanyCandidateMutationResultSchema = z.object({ candidate: CompanyCandidateSchema, created: z.boolean() });
 export const CompanyCareerSourceMutationResultSchema = z.object({ source: CompanyCareerSourceSchema, created: z.boolean() });
+export type CompanyCareerSourceMutationResult = z.infer<typeof CompanyCareerSourceMutationResultSchema>;
 export const CandidateVerificationUpdateSchema = z.object({
   status: z.enum(["quarantined", "rejected"]),
   verificationScore: z.number().int().min(0).max(100),
@@ -185,6 +191,18 @@ export const CandidateVerificationRunResultSchema = z.object({
   completedAt: TimestampSchema,
 });
 export type CandidateVerificationRunResult = z.infer<typeof CandidateVerificationRunResultSchema>;
+export const ManualCompanyRequestSchema = z.object({
+  canonicalName: z.string().trim().min(1).max(200),
+  homepageUrl: PublicHttpUrlSchema,
+}).strict();
+export type ManualCompanyRequest = z.infer<typeof ManualCompanyRequestSchema>;
+export const ManualCompanyResultSchema = z.object({
+  candidate: CompanyCandidateSchema,
+  verification: CandidateVerificationRunResultSchema,
+});
+export type ManualCompanyResult = z.infer<typeof ManualCompanyResultSchema>;
+export const ManualCareerSourceRequestSchema = z.object({ canonicalUrl: PublicHttpUrlSchema }).strict();
+export type ManualCareerSourceRequest = z.infer<typeof ManualCareerSourceRequestSchema>;
 export const CompanyDiscoveryRequestSchema = z.object({
   queries: z.array(z.string().trim().min(1).max(200)).max(10).default([]),
 }).strict();

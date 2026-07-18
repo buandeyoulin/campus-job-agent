@@ -7,7 +7,7 @@ import { CompanyRepository, openDatabase, type StorageDatabase } from "@campus-j
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
 import { CompanyDirectoryService } from "../src/company-directory-service.js";
-import type { CompanyDiscoveryProvider, VerificationDecision } from "@campus-job-agent/sources";
+import type { CompanyDiscoveryProvider, VerificationCareerSource, VerificationDecision } from "@campus-job-agent/sources";
 
 const ORIGIN = "http://127.0.0.1:4318";
 const roots: string[] = [];
@@ -16,6 +16,7 @@ const apps: FastifyInstance[] = [];
 
 interface SetupOptions {
   verifyCandidate?: (candidate: CompanyCandidate) => Promise<VerificationDecision>;
+  verifyCareerSource?: (company: import("@campus-job-agent/contracts").Company, url: string) => Promise<VerificationCareerSource | null>;
   discoveryProvider?: CompanyDiscoveryProvider;
 }
 
@@ -58,14 +59,46 @@ describe("company directory routes", () => {
   });
 
   it("imports the reviewed seed idempotently and exposes 20 active companies", async () => {
-    const { app, companies } = await setup();
-    expect(companies.importSeed()).toMatchObject({ fetched: 20, created: 20, updated: 0 });
-    expect(companies.importSeed()).toMatchObject({ fetched: 20, created: 0, updated: 20 });
+    const { app } = await setup();
+    const first = await app.inject({ method: "POST", url: "/api/companies/seed/import", headers: { origin: ORIGIN }, payload: {} });
+    const second = await app.inject({ method: "POST", url: "/api/companies/seed/import", headers: { origin: ORIGIN }, payload: {} });
+    expect(first.json()).toMatchObject({ fetched: 20, created: 20, updated: 0 });
+    expect(second.json()).toMatchObject({ fetched: 20, created: 0, updated: 20 });
 
     const listed = await app.inject({ method: "GET", url: "/api/companies?status=active&pageSize=100" });
     const result = CompanyListSchema.parse(listed.json());
     expect(result.total).toBe(20);
     expect(result.companies.every((company) => company.origin === "seed" && company.verificationScore === 100)).toBe(true);
+  });
+
+  it("lists candidates and routes manual companies through verification", async () => {
+    const verification: VerificationDecision = {
+      status: "quarantined", score: 55, canonicalName: "Manual Semi", officialDomain: "manual.example",
+      evidence: [{ kind: "official_domain", url: "https://manual.example/", detail: "Reachable" }],
+      failureReason: "missing recruiting evidence", careerSources: [],
+    };
+    const { app } = await setup({ verifyCandidate: async () => verification });
+    const added = await app.inject({ method: "POST", url: "/api/companies", headers: { origin: ORIGIN }, payload: { canonicalName: "Manual Semi", homepageUrl: "https://manual.example/" } });
+    expect(added.statusCode).toBe(200);
+    expect(added.json()).toMatchObject({ candidate: { status: "quarantined", candidateDomain: "manual.example" }, verification: { processed: 1, quarantined: 1 } });
+    const listed = await app.inject({ method: "GET", url: "/api/company-candidates?status=quarantined" });
+    expect(listed.json()).toMatchObject({ total: 1, candidates: [{ canonicalName: "Manual Semi" }] });
+  });
+
+  it("accepts only verified career entries for an existing verified company", async () => {
+    const verifiedSource: VerificationCareerSource = {
+      url: "https://verified.example/careers", kind: "html", adapter: "verified-static",
+      evidence: [{ kind: "homepage_link", url: "https://verified.example/", detail: "Linked from official homepage" }],
+    };
+    const { app, repository } = await setup({ verifyCareerSource: async (_company, url) => url.endsWith("/careers") ? verifiedSource : null });
+    const company = repository.upsertSeed({ canonicalName: "Verified Semi", aliases: [], officialDomain: "verified.example", industries: ["chip_design"], regions: ["China"], verificationEvidence: [{ kind: "official_domain", url: "https://verified.example/", detail: "Official" }] }).company;
+
+    const rejected = await app.inject({ method: "POST", url: `/api/companies/${company.id}/career-sources`, headers: { origin: ORIGIN }, payload: { canonicalUrl: "https://evil.example/jobs" } });
+    expect(rejected.statusCode).toBe(422);
+    const accepted = await app.inject({ method: "POST", url: `/api/companies/${company.id}/career-sources`, headers: { origin: ORIGIN }, payload: { canonicalUrl: "https://verified.example/careers" } });
+    expect(accepted.json()).toMatchObject({ source: { companyId: company.id, canonicalUrl: "https://verified.example/careers" }, created: true });
+    const listed = await app.inject({ method: "GET", url: `/api/companies/${company.id}/career-sources` });
+    expect(listed.json()).toHaveLength(1);
   });
 
   it("promotes only verified candidates and isolates inconclusive candidates", async () => {

@@ -4,6 +4,14 @@ import {
   CompanyDiscoveryRequestSchema,
   CompanyDiscoveryRunResultSchema,
   CompanySeedImportResultSchema,
+  CompanyCandidateListQuerySchema,
+  ManualCareerSourceRequestSchema,
+  ManualCompanyRequestSchema,
+  ManualCompanyResultSchema,
+  type Company,
+  type CompanyCandidateList,
+  type CompanyCareerSourceMutationResult,
+  type ManualCompanyResult,
   type CandidateVerificationRunResult,
   type CompanyDiscoveryRunResult,
   type CompanyList,
@@ -17,6 +25,8 @@ import {
   type CompanyDiscoveryProvider,
   type SeedCompanyRecord,
   type VerificationDecision,
+  type VerificationCareerSource,
+  verifyCareerSourceForCompany,
 } from "@campus-job-agent/sources";
 import { normalizeDomain, type CompanyRepository } from "@campus-job-agent/storage";
 import type { CompanyCandidate } from "@campus-job-agent/contracts";
@@ -26,6 +36,7 @@ export interface CompanyDirectoryServiceDependencies {
   repository: CompanyRepository;
   loadSeed?: () => SeedCompanyRecord[];
   verifyCandidate?: (candidate: CompanyCandidate) => Promise<VerificationDecision>;
+  verifyCareerSource?: (company: Company, canonicalUrl: string) => Promise<VerificationCareerSource | null>;
   discoveryProvider?: CompanyDiscoveryProvider;
   now?: () => Date;
 }
@@ -35,6 +46,45 @@ export class CompanyDirectoryService {
 
   list(query: unknown): CompanyList {
     return this.dependencies.repository.listCompanies(CompanyListQuerySchema.parse(query));
+  }
+
+  listCandidates(query: unknown): CompanyCandidateList {
+    return this.dependencies.repository.listCandidates(CompanyCandidateListQuerySchema.parse(query));
+  }
+
+  listCareerSources(companyId: string) {
+    if (!this.dependencies.repository.getCompany(companyId)) throw new ApiFailure(404, "company_not_found", "Verified company not found");
+    return this.dependencies.repository.listCareerSources(companyId);
+  }
+
+  async addCompany(value: unknown): Promise<ManualCompanyResult> {
+    const input = ManualCompanyRequestSchema.parse(value);
+    const homepage = new URL(input.homepageUrl);
+    const candidate = this.dependencies.repository.upsertCandidate({
+      canonicalName: input.canonicalName,
+      candidateDomain: normalizeDomain(homepage.hostname),
+      homepageUrl: homepage.toString(),
+      origin: "manual",
+      evidence: [{ kind: "official_domain", url: homepage.toString(), detail: "User-provided public company homepage pending verification" }],
+    }).candidate;
+    const counts = await this.verifyCandidates([candidate]);
+    const updated = this.dependencies.repository.getCandidate(candidate.id)!;
+    const now = this.dependencies.now ?? (() => new Date());
+    return ManualCompanyResultSchema.parse({ candidate: updated, verification: { processed: 1, ...counts, completedAt: now().toISOString() } });
+  }
+
+  async addCareerSource(companyId: string, value: unknown): Promise<CompanyCareerSourceMutationResult> {
+    const input = ManualCareerSourceRequestSchema.parse(value);
+    const company = this.dependencies.repository.getCompany(companyId);
+    if (!company || company.status !== "active") throw new ApiFailure(404, "company_not_found", "Verified company not found");
+    const verified = await (this.dependencies.verifyCareerSource ?? verifyCareerSourceForCompany)(company, input.canonicalUrl);
+    if (!verified) throw new ApiFailure(422, "source_unavailable", "Career entry is not linked and verified by the official company site");
+    return this.dependencies.repository.upsertCareerSource(company.id, {
+      canonicalUrl: verified.url,
+      kind: verified.kind,
+      adapter: verified.adapter,
+      verificationEvidence: verified.evidence,
+    });
   }
 
   importSeed(): CompanySeedImportResult {

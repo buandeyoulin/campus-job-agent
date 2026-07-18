@@ -294,9 +294,12 @@ export class CompanyRepository {
     if (query.status) { clauses.push("status = ?"); params.push(query.status); }
     const where = clauses.length ? `where ${clauses.join(" and ")}` : "";
     const total = (this.db.prepare(`select count(*) as total from companies ${where}`).get(...params) as { total: number }).total;
-    const rows = this.db.prepare(`select * from companies ${where} order by canonical_name, id limit ? offset ?`)
-      .all(...params, query.pageSize, (query.page - 1) * query.pageSize) as unknown as CompanyRow[];
-    return CompanyListSchema.parse({ companies: rows.map(toCompany), total, page: query.page, pageSize: query.pageSize });
+    const rows = this.db.prepare(`select companies.*,
+      (select count(*) from company_career_sources source where source.company_id = companies.id) as career_source_count,
+      (select count(distinct jobs.id) from jobs join job_sources source on source.job_id = jobs.id where source.company_id = companies.id and jobs.lifecycle_status != 'closed') as job_count
+      from companies ${where} order by canonical_name, id limit ? offset ?`)
+      .all(...params, query.pageSize, (query.page - 1) * query.pageSize) as unknown as Array<CompanyRow & { career_source_count: number; job_count: number }>;
+    return CompanyListSchema.parse({ companies: rows.map((row) => ({ ...toCompany(row), careerSourceCount: row.career_source_count, jobCount: row.job_count })), total, page: query.page, pageSize: query.pageSize });
   }
 
   listCandidates(value: CompanyCandidateListQuery): CompanyCandidateList {
