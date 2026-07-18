@@ -14,6 +14,7 @@ export const CandidateStatusSchema = z.enum(["pending", "quarantined", "verified
 export const CompanyStatusSchema = z.enum(["active", "paused", "invalid"]);
 export const CompanyOriginSchema = z.enum(["seed", "discovery", "manual"]);
 export const CareerSourceKindSchema = z.enum(["ats_api", "json_api", "json_ld", "sitemap", "html", "custom"]);
+export type CareerSourceKind = z.infer<typeof CareerSourceKindSchema>;
 export const CareerSourceStatusSchema = z.enum(["pending", "active", "backoff", "unavailable"]);
 export const EvidenceKindSchema = z.enum([
   "official_domain",
@@ -168,6 +169,22 @@ export type CompanyCandidateList = z.infer<typeof CompanyCandidateListSchema>;
 export const CompanyMutationResultSchema = z.object({ company: CompanySchema, created: z.boolean() });
 export const CompanyCandidateMutationResultSchema = z.object({ candidate: CompanyCandidateSchema, created: z.boolean() });
 export const CompanyCareerSourceMutationResultSchema = z.object({ source: CompanyCareerSourceSchema, created: z.boolean() });
+export const CandidateVerificationUpdateSchema = z.object({
+  status: z.enum(["quarantined", "rejected"]),
+  verificationScore: z.number().int().min(0).max(100),
+  evidence: EvidenceListSchema,
+  failureReason: z.string().trim().min(1).max(1_000),
+  nextRetryAt: TimestampSchema.nullable(),
+}).strict();
+export type CandidateVerificationUpdate = z.infer<typeof CandidateVerificationUpdateSchema>;
+export const CandidateVerificationRunResultSchema = z.object({
+  processed: z.number().int().nonnegative(),
+  verified: z.number().int().nonnegative(),
+  quarantined: z.number().int().nonnegative(),
+  rejected: z.number().int().nonnegative(),
+  completedAt: TimestampSchema,
+});
+export type CandidateVerificationRunResult = z.infer<typeof CandidateVerificationRunResultSchema>;
 export const CompanySeedImportResultSchema = z.object({
   fetched: z.number().int().nonnegative(),
   created: z.number().int().nonnegative(),

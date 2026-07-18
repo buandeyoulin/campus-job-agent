@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import {
   CompanyCandidateInputSchema,
+  CandidateVerificationUpdateSchema,
   CompanyCandidateListQuerySchema,
   CompanyCandidateListSchema,
   CompanyCandidateSchema,
@@ -16,6 +17,7 @@ import {
   type Company,
   type CompanyCandidate,
   type CompanyCandidateInput,
+  type CandidateVerificationUpdate,
   type CompanyCandidateList,
   type CompanyCandidateListQuery,
   type CompanyCareerSource,
@@ -215,7 +217,9 @@ export class CompanyRepository {
             JSON.stringify(decision.industries), JSON.stringify(decision.regions), candidate.origin, decision.verificationScore,
             JSON.stringify(decision.verificationEvidence), now, now, now);
       }
-      this.db.prepare("update company_candidates set status = 'verified', failure_reason = null, updated_at = ? where id = ?").run(now, id);
+      this.db.prepare(`update company_candidates set status = 'verified', verification_score = ?, evidence_json = ?,
+        failure_reason = null, next_retry_at = null, updated_at = ? where id = ?`)
+        .run(decision.verificationScore, JSON.stringify(decision.verificationEvidence), now, id);
       return this.getCompany(companyId)!;
     });
   }
@@ -305,6 +309,25 @@ export class CompanyRepository {
     const rows = this.db.prepare(`select * from company_candidates ${where} order by updated_at desc, id limit ? offset ?`)
       .all(...params, query.pageSize, (query.page - 1) * query.pageSize) as unknown as CandidateRow[];
     return CompanyCandidateListSchema.parse({ candidates: rows.map(toCandidate), total, page: query.page, pageSize: query.pageSize });
+  }
+
+  listEligibleCandidates(limit: number, at = this.now().toISOString()): CompanyCandidate[] {
+    const size = Math.max(1, Math.min(100, Math.trunc(limit)));
+    const rows = this.db.prepare(`select * from company_candidates
+      where status = 'pending' or (status = 'quarantined' and (next_retry_at is null or next_retry_at <= ?))
+      order by created_at, id limit ?`).all(at, size) as unknown as CandidateRow[];
+    return rows.map(toCandidate);
+  }
+
+  recordCandidateDecision(id: string, value: CandidateVerificationUpdate): CompanyCandidate {
+    const decision = CandidateVerificationUpdateSchema.parse(value);
+    const now = this.now().toISOString();
+    const result = this.db.prepare(`update company_candidates set status = ?, verification_score = ?, evidence_json = ?,
+      failure_reason = ?, retry_count = retry_count + 1, next_retry_at = ?, updated_at = ? where id = ? and status != 'verified'`)
+      .run(decision.status, decision.verificationScore, JSON.stringify(decision.evidence), decision.failureReason,
+        decision.nextRetryAt, now, id);
+    if (result.changes === 0) throw new Error("Candidate not found or already verified");
+    return this.getCandidate(id)!;
   }
 
   listCareerSources(companyId: string): CompanyCareerSource[] {
