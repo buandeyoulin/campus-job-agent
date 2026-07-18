@@ -22,16 +22,5 @@ export function registerJobsRoutes(app: FastifyInstance, jobs: JobsService): voi
       throw error;
     }
   });
-  app.post("/api/jobs/scan/offerbiu", async () => {
-    try {
-      return await jobs.scanOfferBiu();
-    } catch (error) {
-      if (error instanceof PublicSourceUnavailableError) {
-        throw new ApiFailure(502, "source_unavailable", "OfferBiu 岗位源暂时不可用");
-      }
-      throw error;
-    }
-  });
   app.post("/api/jobs/import", async (request, reply) => reply.code(201).send(jobs.importJobs(request.body)));
-  app.post("/api/jobs/import/offerbiu-visible", async (request, reply) => reply.code(201).send(jobs.importOfferBiuVisible(request.body)));
 }

@@ -8,7 +8,6 @@ const app = buildApp({
   matches: services.matches,
   applications: services.applications,
   companies: services.companies,
-  offerBiuBridge: services.offerBiuBridge,
   allowedOrigins: new Set([
     "http://127.0.0.1:4318",
     "http://127.0.0.1:4317",

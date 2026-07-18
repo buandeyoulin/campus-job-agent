@@ -1,7 +1,5 @@
 import {
   JobImportSchema,
-  OfferBiuBridgeBatchSchema,
-  OfferBiuVisibleImportSchema,
   JobListQuerySchema,
   ScanResultSchema,
   type JobImport,
@@ -12,7 +10,6 @@ import {
   type SourceStatus,
   type StoredJob,
 } from "@campus-job-agent/contracts";
-import { mapOfferBiuPosting } from "@campus-job-agent/sources";
 import type { JobRepository } from "@campus-job-agent/storage";
 
 export class PublicSourceUnavailableError extends Error {
@@ -25,7 +22,6 @@ export class PublicSourceUnavailableError extends Error {
 export interface JobsServiceDependencies {
   repository: JobRepository;
   fetchTencent: () => Promise<NormalizedJob[]>;
-  fetchOfferBiu: () => Promise<NormalizedJob[]>;
   now?: () => Date;
 }
 
@@ -67,53 +63,9 @@ export class JobsService {
     return result;
   }
 
-  async scanOfferBiu(): Promise<ScanResult> {
-    let discovered: NormalizedJob[];
-    try {
-      discovered = await this.dependencies.fetchOfferBiu();
-    } catch {
-      this.dependencies.repository.recordScan({ source: "offerbiu", succeeded: false, message: "OfferBiu 岗位源暂时不可用" });
-      throw new PublicSourceUnavailableError("offerbiu");
-    }
-    const result = this.persist("offerbiu", discovered);
-    this.dependencies.repository.recordScan({ source: "offerbiu", succeeded: true, message: `已读取 ${result.fetched} 条 OfferBiu 招聘信息` });
-    return result;
-  }
-
   importJobs(input: unknown): ScanResult {
     const parsed = JobImportSchema.parse(input);
     return this.persist("manual", parsed.jobs);
-  }
-
-  importOfferBiuVisible(input: unknown): ScanResult {
-    const payload = OfferBiuVisibleImportSchema.parse(input);
-    const capturedAt = this.now().toISOString();
-    const jobs = payload.records.map((record) => ({
-      source: "offerbiu-authenticated",
-      sourceJobId: `${record.company}\u0000${record.roles}\u0000${record.applyUrl}`,
-      sourceUrl: record.applyUrl,
-      title: record.roles,
-      company: record.company,
-      location: record.location,
-      description: [
-        "Visible in the user's signed-in OfferBiu recruitment library.",
-        record.industry && `Industry: ${record.industry}`,
-        record.cohort && `Cohort: ${record.cohort}`,
-        record.deadline && `Deadline: ${record.deadline}`,
-        record.requirement && `Requirements: ${record.requirement}`,
-      ].filter(Boolean).join("\n"),
-      capturedAt,
-    }));
-    return this.persist("offerbiu-authenticated", jobs);
-  }
-
-  importOfferBiuBridge(input: unknown): ScanResult {
-    const payload = OfferBiuBridgeBatchSchema.parse(input);
-    const capturedAt = this.now().toISOString();
-    const jobs = payload.records
-      .map((record) => mapOfferBiuPosting(record, capturedAt))
-      .filter((job): job is NormalizedJob => job !== null);
-    return this.persist("offerbiu", jobs);
   }
 
   private persist(source: string, values: NormalizedJob[]): ScanResult {

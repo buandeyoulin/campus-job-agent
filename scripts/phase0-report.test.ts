@@ -7,10 +7,8 @@ describe("Phase 0 report", () => {
   it("lists probe outcomes without serializing secret-shaped fields", () => {
     const report = formatPhase0Report([
       { name: "tencent", status: "pass", summary: "jobs returned", details: { jobCount: 5 }, checkedAt: "2026-07-16T00:00:00.000Z" },
-      { name: "offerbiu", status: "fail", summary: "no public records", details: { publicJobCount: 0 }, checkedAt: "2026-07-16T00:00:00.000Z" }
     ]);
     expect(report).toContain("| tencent | PASS | jobs returned |");
-    expect(report).toContain("| offerbiu | FAIL | OfferBiu public source is not usable for automatic collection |");
     expect(report).not.toMatch(/api.?key|authorization|secret/i);
   });
 
@@ -27,18 +25,6 @@ describe("Phase 0 report", () => {
     const next = formatPhase0Report([
       { name: "tencent", status: "pass", summary: "jobs returned", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
     ]);
-    expect(shouldUpdateTrackedReport(previous, next)).toBe(false);
-  });
-
-  it("keeps the informational OfferBiu failure stable across diagnostic reasons", () => {
-    const previous = formatPhase0Report([
-      { name: "offerbiu", status: "fail", summary: "OfferBiu public page could not be inspected", details: {}, checkedAt: "2026-07-16T00:00:00.000Z" },
-    ]);
-    const next = formatPhase0Report([
-      { name: "offerbiu", status: "fail", summary: "OfferBiu public page exposes no usable job records", details: {}, checkedAt: "2026-07-16T01:00:00.000Z" },
-    ]);
-
-    expect(previous).toContain("OfferBiu public source is not usable for automatic collection");
     expect(shouldUpdateTrackedReport(previous, next)).toBe(false);
   });
 
@@ -62,10 +48,9 @@ describe("Phase 0 required gate", () => {
     checkedAt: "2026-07-16T00:00:00.000Z",
   });
 
-  it("requires Codex but permits optional provider skips and OfferBiu failure", () => {
+  it("requires Codex but permits optional provider skips", () => {
     const results = [
       result("tencent", "pass"),
-      result("offerbiu", "fail"),
       result("codex", "pass"),
       result("openai-compatible", "skip"),
       result("ollama", "skip"),

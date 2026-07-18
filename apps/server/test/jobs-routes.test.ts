@@ -31,7 +31,6 @@ async function setup() {
   const jobs = new JobsService({
     repository: new JobRepository(storage.db),
     fetchTencent: async () => [job],
-    fetchOfferBiu: async () => [{ ...job, source: "offerbiu", sourceJobId: "offerbiu-1" }],
   });
   const app = buildApp({ jobs, allowedOrigins: new Set([ORIGIN]) });
   apps.push(app);
@@ -55,14 +54,11 @@ describe("job discovery routes", () => {
     expect(JobListSchema.parse(listed.json())).toMatchObject({ total: 1, jobs: [expect.objectContaining({ title: "前端开发实习生" })] });
   });
 
-  it("scans all OfferBiu recruitment records into the local job library", async () => {
+  it("returns 404 for an unknown job source", async () => {
     const app = await setup();
-    const scan = await app.inject({ method: "POST", url: "/api/jobs/scan/offerbiu", headers: { origin: ORIGIN } });
+    const scan = await app.inject({ method: "POST", url: "/api/jobs/scan/unknown-source", headers: { origin: ORIGIN } });
 
-    expect(scan.statusCode).toBe(200);
-    expect(ScanResultSchema.parse(scan.json())).toMatchObject({ source: "offerbiu", fetched: 1, created: 1 });
-    const listed = await app.inject({ method: "GET", url: "/api/jobs?source=offerbiu" });
-    expect(JobListSchema.parse(listed.json())).toMatchObject({ total: 1 });
+    expect(scan.statusCode).toBe(404);
   });
 
   it("rejects a mutating scan without the configured loopback origin", async () => {
@@ -87,32 +83,15 @@ describe("job discovery routes", () => {
     expect(response.body).not.toContain("不应回显");
   });
 
-  it("imports visible OfferBiu session records into the local job library without credentials", async () => {
+  it("returns 404 for an unknown specialized import route", async () => {
     const app = await setup();
     const response = await app.inject({
       method: "POST",
-      url: "/api/jobs/import/offerbiu-visible",
+      url: "/api/jobs/import/unknown-source",
       headers: { origin: ORIGIN },
-      payload: {
-        records: [{
-          company: "Example Semiconductor",
-          roles: "Digital IC Design Engineer",
-          location: "Shanghai",
-          industry: "Semiconductor",
-          cohort: "2027",
-          deadline: "Open until filled",
-          requirement: "Campus recruiting",
-          applyUrl: "https://careers.example.com/campus/digital-ic",
-        }],
-      },
+      payload: { records: [] },
     });
 
-    expect(response.statusCode).toBe(201);
-    expect(ScanResultSchema.parse(response.json())).toMatchObject({ source: "offerbiu-authenticated", fetched: 1, created: 1 });
-    const listed = await app.inject({ method: "GET", url: "/api/jobs?source=offerbiu-authenticated" });
-    expect(JobListSchema.parse(listed.json())).toMatchObject({
-      total: 1,
-      jobs: [expect.objectContaining({ company: "Example Semiconductor", sourceUrl: "https://careers.example.com/campus/digital-ic" })],
-    });
+    expect(response.statusCode).toBe(404);
   });
 });

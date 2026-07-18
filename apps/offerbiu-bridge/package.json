@@ -1,9 +1,0 @@
-{
-  "name": "@campus-job-agent/offerbiu-bridge",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "node scripts/verify-extension.mjs"
-  }
-}

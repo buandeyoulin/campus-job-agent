@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   JobImportSchema,
   JobListQuerySchema,
-  OfferBiuBridgeBatchSchema,
-  OfferBiuBridgeSessionSchema,
   StoredJobSchema,
 } from "../src/index.js";
 
@@ -40,43 +38,4 @@ describe("job discovery contracts", () => {
     expect(() => JobListQuerySchema.parse({ pageSize: 101 })).toThrow(/pageSize/i);
   });
 
-  it("accepts one bounded OfferBiu bridge page and strips unknown fields", () => {
-    const parsed = OfferBiuBridgeBatchSchema.parse({
-      syncId: "018a2c8a-51dc-7a81-a240-000000000001",
-      seasonYear: 2027,
-      page: 0,
-      totalPages: 313,
-      records: [{
-        id: "rec-1",
-        companyName: "示例半导体",
-        positionsText: "验证工程师",
-        locations: ["上海"],
-        targetYears: [2027],
-        applyUrl: "https://example.com/jobs/1",
-        authorization: "Bearer must-be-dropped",
-      }],
-    });
-
-    expect(parsed.records).toHaveLength(1);
-    expect(parsed.records[0]).not.toHaveProperty("authorization");
-    expect(OfferBiuBridgeSessionSchema.parse({ token: "a".repeat(43) }).token).toHaveLength(43);
-  });
-
-  it("rejects oversized or internally inconsistent OfferBiu bridge pages", () => {
-    const record = { id: "rec-1", companyName: "示例半导体", positionsText: "验证工程师" };
-    expect(() => OfferBiuBridgeBatchSchema.parse({
-      syncId: "018a2c8a-51dc-7a81-a240-000000000001",
-      seasonYear: 2027,
-      page: 2,
-      totalPages: 2,
-      records: [record],
-    })).toThrow();
-    expect(() => OfferBiuBridgeBatchSchema.parse({
-      syncId: "018a2c8a-51dc-7a81-a240-000000000001",
-      seasonYear: 2027,
-      page: 0,
-      totalPages: 2,
-      records: Array.from({ length: 51 }, () => record),
-    })).toThrow();
-  });
 });

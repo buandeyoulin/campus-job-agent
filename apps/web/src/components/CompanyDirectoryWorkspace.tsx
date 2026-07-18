@@ -13,8 +13,6 @@ export interface CompanyDirectoryWorkspaceProps { api: CompanyDirectoryApi }
 export function CompanyDirectoryWorkspace({ api }: CompanyDirectoryWorkspaceProps) {
   const [query, setQuery] = useState<CompanyDirectoryListQuery>(EMPTY_QUERY);
   const [list, setList] = useState<CompanyDirectoryList>({ entries: [], total: 0, page: 1, pageSize: 20 });
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async (nextQuery: CompanyDirectoryListQuery) => {
@@ -28,29 +26,12 @@ export function CompanyDirectoryWorkspace({ api }: CompanyDirectoryWorkspaceProp
 
   useEffect(() => { void load(query); }, [load, query]);
 
-  const scan = async () => {
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const result = await api.scanOfferBiu();
-      setMessage(`OfferBiu scan finished: ${result.fetched} public entries found, ${result.created} added.`);
-      await load(query);
-    } catch (scanError) {
-      setError(errorMessage(scanError));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <section className="card company-directory" aria-labelledby="company-directory-heading">
       <div className="job-heading">
         <div><p className="eyebrow">PUBLIC COMPANY DIRECTORY</p><h2 id="company-directory-heading">Company recruiting entry points</h2></div>
-        <button type="button" onClick={() => void scan()} disabled={busy}>{busy ? "Scanning…" : "Scan OfferBiu directory"}</button>
       </div>
-      <p className="privacy-note job-note">The scan only reads public pages. OfferBiu detail pages are followed only to collect explicit external career links; it never logs in or guesses an official site.</p>
-      {message ? <p role="status">{message}</p> : null}
+      <p className="privacy-note job-note">Company recruiting entry points are stored locally and open as ordinary external links.</p>
       {error ? <p role="alert">{error}</p> : null}
       <label className="company-search">Search company<input aria-label="Search company" value={query.keyword} onChange={(event) => setQuery((current) => ({ ...current, keyword: event.target.value, page: 1 }))} /></label>
       {list.entries.length === 0 ? <p className="empty-copy">No public company career links have been stored yet.</p> : (

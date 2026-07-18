@@ -6,7 +6,7 @@ Campus Job Agent 是一个本地优先、人工投递的求职资料与职位辅
 
 在本地刷新腾讯公开职位、查看来源状态、按关键词与城市筛选、阅读职位详情，并通过普通外链自行前往公开岗位页面。职位会在本地去重保存；应用不会登录招聘网站或自动投递。
 
-来源规则、JSON 导入格式和数据边界见 [公开职位发现文档](docs/job-discovery.md)。需要同步当前已登录 OfferBiu 会话可见的完整分页时，使用只传岗位白名单字段的 [OfferBiu 浏览器会话桥接](docs/offerbiu-browser-bridge.md)；登录凭据留在 Chrome 中，最终投递仍由用户手动完成。
+来源规则、JSON 导入格式和数据边界见 [公开职位发现文档](docs/job-discovery.md)。自建芯片公司库与官方招聘源正在按 [设计规范](docs/superpowers/specs/2026-07-18-owned-company-job-source-design.md) 实现，最终投递仍由用户手动完成。
 
 ## Phase 1：资料工作台
 
@@ -25,7 +25,7 @@ npm run dev
 
 ## Phase 0：可行性验证
 
-Phase 0 验证 Codex 结构化输出、OfferBiu/Tencent 公开页面访问、PDF 生成以及 PDF/DOCX 解析。完整安装、登录、可选提供方和验收门槛见 [Phase 0 Feasibility Probes](docs/feasibility/README.md)。
+Phase 0 验证 Codex 结构化输出、腾讯公开岗位访问、PDF 生成以及 PDF/DOCX 解析。完整安装、登录、可选提供方和验收门槛见 [Phase 0 Feasibility Probes](docs/feasibility/README.md)。
 
 ```powershell
 npm ci

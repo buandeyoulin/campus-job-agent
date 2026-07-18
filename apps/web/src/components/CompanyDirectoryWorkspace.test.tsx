@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CompanyDirectoryApi } from "../company-directory-api";
 import { CompanyDirectoryWorkspace } from "./CompanyDirectoryWorkspace";
@@ -14,27 +14,25 @@ function createApi(): CompanyDirectoryApi {
         id: "018a2c8a-51dc-7a81-a240-000000000001",
         companyName: "Example Semiconductor",
         careerUrl: "https://careers.example.com/campus",
-        directorySource: "offerbiu",
-        directoryUrl: "https://offerbiu.com/company/example",
+        directorySource: "manual",
+        directoryUrl: "https://example.com/",
         status: "pending",
         firstDiscoveredAt: capturedAt,
         lastDiscoveredAt: capturedAt,
       }], total: 1, page: 1, pageSize: 20,
     }),
-    scanOfferBiu: vi.fn().mockResolvedValue({ source: "offerbiu", fetched: 1, created: 1, updated: 0, completedAt: capturedAt }),
   };
 }
 
 describe("CompanyDirectoryWorkspace", () => {
   afterEach(() => cleanup());
 
-  it("scans the directory and exposes an ordinary external career link", async () => {
+  it("lists career links without exposing an aggregate-directory scan action", async () => {
     const api = createApi();
     render(<CompanyDirectoryWorkspace api={api} />);
 
     expect(await screen.findByText("Example Semiconductor")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open career site" })).toHaveAttribute("href", "https://careers.example.com/campus");
-    fireEvent.click(screen.getByRole("button", { name: "Scan OfferBiu directory" }));
-    await waitFor(() => expect(api.scanOfferBiu).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("button", { name: /scan/i })).not.toBeInTheDocument();
   });
 });

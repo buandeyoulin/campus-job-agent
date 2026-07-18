@@ -21,19 +21,19 @@ afterEach(async () => {
 });
 
 describe("company directory repository", () => {
-  it("stores explicit career sites with OfferBiu provenance and updates repeats", async () => {
+  it("stores explicit career sites with manual provenance and updates repeats", async () => {
     const repository = await setup();
     const first = repository.upsert({
       companyName: "Example Semiconductor",
       careerUrl: "https://careers.example.com/campus",
-      directorySource: "offerbiu",
-      directoryUrl: "https://offerbiu.com/companies/",
+      directorySource: "manual",
+      directoryUrl: "https://example.com/",
     });
     const second = repository.upsert({
       companyName: "Example Semiconductor",
       careerUrl: "https://careers.example.com/campus",
-      directorySource: "offerbiu",
-      directoryUrl: "https://offerbiu.com/companies/",
+      directorySource: "manual",
+      directoryUrl: "https://example.com/",
     });
 
     expect(first.created).toBe(true);

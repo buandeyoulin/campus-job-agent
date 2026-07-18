@@ -12,7 +12,7 @@ import {
   resolveDataPaths,
   ResumeRepository,
 } from "@campus-job-agent/storage";
-import { fetchOfferBiuCompanyDirectory, fetchOfferBiuJobs, fetchTencentJobs } from "@campus-job-agent/sources";
+import { fetchTencentJobs } from "@campus-job-agent/sources";
 import { ExtractionJobRunner } from "./extraction-jobs.js";
 import { OnboardingService } from "./onboarding-service.js";
 import { ResumeFileStore } from "./resume-files.js";
@@ -21,7 +21,6 @@ import { JobsService } from "./jobs-service.js";
 import { MatchService } from "./matching-service.js";
 import { ApplicationsService } from "./applications-service.js";
 import { CompanyDirectoryService } from "./company-directory-service.js";
-import { OfferBiuBridgeService } from "./offerbiu-bridge-service.js";
 
 export interface ProductionServices {
   onboarding: OnboardingService;
@@ -33,7 +32,6 @@ export interface ProductionServices {
   matches: MatchService;
   applications: ApplicationsService;
   companies: CompanyDirectoryService;
-  offerBiuBridge: OfferBiuBridgeService;
   close(): void;
 }
 
@@ -66,11 +64,10 @@ export async function createProductionServices(
     const resumes = new ResumeRepository(storage.db);
     const files = new ResumeFileStore(paths.root);
     const onboarding = new OnboardingService({ profiles, facts, resumes });
-    const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs, fetchOfferBiu: fetchOfferBiuJobs });
+    const jobs = new JobsService({ repository: jobsRepository, fetchTencent: fetchTencentJobs });
     const matches = new MatchService({ profiles, facts, jobs: jobsRepository });
     const applications = new ApplicationsService(applicationsRepository);
-    const companies = new CompanyDirectoryService({ repository: companiesRepository, fetchOfferBiu: fetchOfferBiuCompanyDirectory });
-    const offerBiuBridge = new OfferBiuBridgeService(jobs);
+    const companies = new CompanyDirectoryService({ repository: companiesRepository });
     const runner = new ExtractionJobRunner({
       resumes,
       facts,
@@ -97,7 +94,6 @@ export async function createProductionServices(
       matches,
       applications,
       companies,
-      offerBiuBridge,
       close: () => storage.close(),
     };
   } catch (error) {

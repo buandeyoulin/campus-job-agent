@@ -2,15 +2,12 @@ import {
   ApiErrorSchema,
   CompanyDirectoryListQuerySchema,
   CompanyDirectoryListSchema,
-  CompanyDirectoryScanResultSchema,
   type CompanyDirectoryList,
   type CompanyDirectoryListQuery,
-  type CompanyDirectoryScanResult,
 } from "@campus-job-agent/contracts";
 
 export interface CompanyDirectoryApi {
   list(query: CompanyDirectoryListQuery): Promise<CompanyDirectoryList>;
-  scanOfferBiu(): Promise<CompanyDirectoryScanResult>;
 }
 
 async function request(path: string, init?: RequestInit): Promise<unknown> {
@@ -26,8 +23,5 @@ export const browserCompanyDirectoryApi: CompanyDirectoryApi = {
     const search = new URLSearchParams();
     for (const [key, value] of Object.entries(input)) search.set(key, String(value));
     return CompanyDirectoryListSchema.parse(await request(`/api/companies?${search.toString()}`));
-  },
-  async scanOfferBiu() {
-    return CompanyDirectoryScanResultSchema.parse(await request("/api/companies/scan/offerbiu", { method: "POST" }));
   },
 };

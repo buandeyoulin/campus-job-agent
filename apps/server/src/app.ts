@@ -12,8 +12,6 @@ import { registerApplicationsRoutes } from "./applications-routes.js";
 import type { ApplicationsService } from "./applications-service.js";
 import { registerCompanyDirectoryRoutes } from "./company-directory-routes.js";
 import type { CompanyDirectoryService } from "./company-directory-service.js";
-import { OFFERBIU_BRIDGE_IMPORT_PATH, registerOfferBiuBridgeRoutes } from "./offerbiu-bridge-routes.js";
-import type { OfferBiuBridgeService } from "./offerbiu-bridge-service.js";
 
 export const LOCAL_HOST = "127.0.0.1" as const;
 export const API_PORT = 4317;
@@ -26,14 +24,12 @@ export interface AppDependencies {
   matches?: MatchService;
   applications?: ApplicationsService;
   companies?: CompanyDirectoryService;
-  offerBiuBridge?: OfferBiuBridgeService;
 }
 
 export function buildApp(dependencies?: AppDependencies) {
   const app = Fastify({ logger: false });
   installErrorHandler(app);
-  const bridgePaths = dependencies?.offerBiuBridge ? new Set([OFFERBIU_BRIDGE_IMPORT_PATH]) : new Set<string>();
-  installOriginGuard(app, dependencies?.allowedOrigins ?? new Set(), bridgePaths);
+  installOriginGuard(app, dependencies?.allowedOrigins ?? new Set());
   app.get("/api/health", async () => ({ status: "ok" as const }));
   if (dependencies?.onboarding) {
     registerOnboardingRoutes(app, dependencies.onboarding);
@@ -43,6 +39,5 @@ export function buildApp(dependencies?: AppDependencies) {
   if (dependencies?.matches) registerMatchingRoutes(app, dependencies.matches);
   if (dependencies?.applications) registerApplicationsRoutes(app, dependencies.applications);
   if (dependencies?.companies) registerCompanyDirectoryRoutes(app, dependencies.companies);
-  if (dependencies?.offerBiuBridge) registerOfferBiuBridgeRoutes(app, dependencies.offerBiuBridge);
   return app;
 }

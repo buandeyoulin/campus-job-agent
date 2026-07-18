@@ -20,12 +20,6 @@ async function setup() {
   storages.push(storage);
   const companies = new CompanyDirectoryService({
     repository: new CompanyRepository(storage.db),
-    fetchOfferBiu: async () => [{
-      companyName: "Example Semiconductor",
-      careerUrl: "https://careers.example.com/campus",
-      directorySource: "offerbiu",
-      directoryUrl: "https://offerbiu.com/companies/",
-    }],
   });
   const app = buildApp({ companies, allowedOrigins: new Set([ORIGIN]) });
   apps.push(app);
@@ -39,13 +33,12 @@ afterEach(async () => {
 });
 
 describe("company directory routes", () => {
-  it("scans OfferBiu directory entries and lists the local records", async () => {
+  it("returns 404 for an unknown company-directory scan", async () => {
     const app = await setup();
-    const scan = await app.inject({ method: "POST", url: "/api/companies/scan/offerbiu", headers: { origin: ORIGIN } });
-    expect(scan.statusCode).toBe(200);
-    expect(scan.json()).toMatchObject({ source: "offerbiu", fetched: 1, created: 1 });
+    const scan = await app.inject({ method: "POST", url: "/api/companies/scan/unknown-source", headers: { origin: ORIGIN } });
+    expect(scan.statusCode).toBe(404);
 
     const listed = await app.inject({ method: "GET", url: "/api/companies?keyword=Semiconductor" });
-    expect(CompanyDirectoryListSchema.parse(listed.json())).toMatchObject({ total: 1 });
+    expect(CompanyDirectoryListSchema.parse(listed.json())).toMatchObject({ total: 0 });
   });
 });
