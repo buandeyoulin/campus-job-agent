@@ -41,7 +41,7 @@ describe("CareerOpsWorkspace", () => {
 
   it("updates manually reported progress and displays persisted resume and interview preparation", async () => {
     const client = api();
-    vi.mocked(client.listApplications).mockResolvedValueOnce([{ application, job, events: [], preparation: null }]);
+    vi.mocked(client.listApplications).mockResolvedValue([{ application, job, events: [], preparation: null }]);
     render(<CareerOpsWorkspace api={client} />);
     await screen.findByRole("heading", { name: "求职进度" });
     fireEvent.change(screen.getByLabelText("求职阶段"), { target: { value: "applied" } });

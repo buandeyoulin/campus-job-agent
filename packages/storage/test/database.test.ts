@@ -2,7 +2,7 @@ import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { MIGRATIONS, openDatabase, resolveDataPaths, type Migration } from "../src/index.js";
+import { ApplicationRepository, JobRepository, MIGRATIONS, openDatabase, resolveDataPaths, type Migration } from "../src/index.js";
 
 const roots: string[] = [];
 
@@ -54,6 +54,20 @@ describe("storage database", () => {
     const backups = (await readdir(resolveDataPaths(root).backupsDir)).filter((name) => name.endsWith(".sqlite"));
     expect(backups).toHaveLength(1);
     expect((await stat(path.join(resolveDataPaths(root).backupsDir, backups[0]!))).size).toBeGreaterThan(0);
+  });
+
+  it("upgrades a version 7 database without losing existing application history", async () => {
+    const root = await tempRoot();
+    const previous = await openDatabase({ dataRoot: root, migrations: MIGRATIONS.filter((migration) => migration.version <= 7) });
+    const job = new JobRepository(previous.db).upsert({ source: "manual", sourceJobId: "migration", sourceUrl: "https://careers.example.com/migration", title: "验证工程师", company: "示例", location: "", description: "公开 JD", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
+    const application = new ApplicationRepository(previous.db).create(job.id);
+    previous.close();
+
+    const upgraded = await openDatabase({ dataRoot: root });
+    expect(new ApplicationRepository(upgraded.db).get(application.id)).toMatchObject({ jobId: job.id, status: "saved" });
+    expect(new ApplicationRepository(upgraded.db).events(application.id)).toHaveLength(1);
+    expect(upgraded.db.prepare("select name from sqlite_master where type='table' and name='application_preparations'").get()).toMatchObject({ name: "application_preparations" });
+    upgraded.close();
   });
 
   it("rolls back a failed migration and returns a sanitized error", async () => {

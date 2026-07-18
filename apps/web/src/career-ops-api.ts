@@ -28,7 +28,7 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
 const json = (method: string, body: unknown): RequestInit => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 export const browserCareerOpsApi: CareerOpsApi = {
-  async listMatches(useAi) { return JobMatchListSchema.parse(await request(`/api/matches?ai=${useAi}`)); },
+  async listMatches(useAi) { return JobMatchListSchema.parse(await request(useAi ? "/api/matches/analyze" : "/api/matches", useAi ? json("POST", {}) : undefined)); },
   async listApplications() { return ApplicationListSchema.parse(await request("/api/applications")); },
   async createApplication(jobId) { return ApplicationSchema.parse(await request("/api/applications", json("POST", { jobId }))); },
   async updateApplication(id, value) { return ApplicationSchema.parse(await request(`/api/applications/${id}`, json("PATCH", value))); },

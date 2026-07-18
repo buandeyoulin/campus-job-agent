@@ -40,9 +40,11 @@ export class ApplicationRepository {
   }
   update(id: string, value: ApplicationUpdate): Application {
     const input = ApplicationUpdateSchema.parse(value); const current = this.get(id); if (!current) throw new Error("Application not found"); const timestamp = this.now().toISOString();
-    this.db.prepare("update applications set status = ?, note = ?, updated_at = ? where id = ?").run(input.status, input.note, timestamp, id);
-    this.db.prepare("insert into application_events (id, application_id, status, note, created_at) values (?, ?, ?, ?, ?)").run(randomUUID(), id, input.status, input.note, timestamp);
-    return this.get(id)!;
+    return withTransaction(this.db, () => {
+      this.db.prepare("update applications set status = ?, note = ?, updated_at = ? where id = ?").run(input.status, input.note, timestamp, id);
+      this.db.prepare("insert into application_events (id, application_id, status, note, created_at) values (?, ?, ?, ?, ?)").run(randomUUID(), id, input.status, input.note, timestamp);
+      return this.get(id)!;
+    });
   }
   events(applicationId: string): ApplicationEvent[] { return (this.db.prepare("select * from application_events where application_id = ? order by created_at, id").all(applicationId) as Array<{ id: string; application_id: string; status: string; note: string; created_at: string }>).map((row) => ApplicationEventSchema.parse({ id: row.id, applicationId: row.application_id, status: row.status, note: row.note, createdAt: row.created_at })); }
   getPreparation(applicationId: string): ApplicationPreparation | null {

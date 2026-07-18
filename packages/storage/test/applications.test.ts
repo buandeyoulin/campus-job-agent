@@ -30,4 +30,16 @@ describe("application repository", () => {
     expect(applications.getPreparation(saved.id)).toEqual(preparation);
     expect(applications.list()).toEqual([applied]);
   });
+
+  it("rolls back the current status when history insertion fails", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-applications-")); roots.push(root);
+    const storage = await openDatabase({ dataRoot: root }); storages.push(storage);
+    const jobs = new JobRepository(storage.db); const job = jobs.upsert({ source: "manual", sourceJobId: "rollback", sourceUrl: "https://careers.example.com/rollback", title: "验证工程师", company: "示例", location: "", description: "公开 JD", capturedAt: "2026-07-17T10:00:00.000Z" }).job;
+    const applications = new ApplicationRepository(storage.db, () => new Date("2026-07-17T10:00:00.000Z"));
+    const saved = applications.create(job.id);
+    storage.db.exec("create trigger reject_applied_event before insert on application_events when new.status = 'applied' begin select raise(abort, 'fixture failure'); end");
+    expect(() => applications.update(saved.id, { status: "applied", note: "手动投递" })).toThrow("fixture failure");
+    expect(applications.get(saved.id)).toMatchObject({ status: "saved", note: "" });
+    expect(applications.events(saved.id)).toHaveLength(1);
+  });
 });

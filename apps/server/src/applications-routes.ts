@@ -9,6 +9,6 @@ export function registerApplicationsRoutes(app: FastifyInstance, applications: A
   app.post<{ Params: { id: string } }>("/api/applications/:id/prepare", async (request) => applications.prepare(request.params.id));
   app.get<{ Params: { id: string } }>("/api/applications/:id/resume.pdf", async (request, reply) => {
     const pdf = await applications.resumePdf(request.params.id);
-    return reply.type("application/pdf").header("Content-Disposition", "attachment; filename=tailored-resume.pdf").send(pdf);
+    return reply.type("application/pdf").header("Cache-Control", "no-store").header("Content-Disposition", "attachment; filename=tailored-resume.pdf").send(pdf);
   });
 }

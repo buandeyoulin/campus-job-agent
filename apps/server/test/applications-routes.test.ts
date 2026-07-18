@@ -18,15 +18,15 @@ describe("application routes", () => {
     const jobs = new JobRepository(storage.db); const profiles = new ProfileRepository(storage.db); const facts = new FactRepository(storage.db);
     const repository = new ApplicationRepository(storage.db, () => new Date("2026-07-18T10:00:00.000Z"));
     profiles.saveProfile({ displayName: "Ray", email: "ray@example.com", phone: "", currentCity: "上海", degree: "本科", major: "微电子", graduationDate: "2027-06" });
-    facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm", content: { type: "skill", name: "UVM", category: "验证", evidence: "完成覆盖率收敛" } });
+    const confirmed = facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm", content: { type: "skill", name: "UVM", category: "验证", evidence: "完成覆盖率收敛" } });
     facts.create({ status: "pending", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:secret", content: { type: "skill", name: "unconfirmed-secret", category: "", evidence: "" } });
     const job = jobs.upsert({ source: "manual", sourceJobId: "1", sourceUrl: "https://careers.example.com/1", title: "数字 IC 验证工程师", company: "示例芯片", location: "上海", description: "负责 UVM 验证与覆盖率", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
     const generate = vi.fn(async () => ({
-      tailoredResumeMarkdown: "# Ray\n\n目标岗位：数字 IC 验证工程师\n\n- UVM：完成覆盖率收敛",
+      selectedFactIds: [confirmed.id],
       interviewQuestions: [
-        { question: "如何搭建 UVM 环境？", answerOutline: "从组件和 phase 说明", evidence: ["UVM"] },
-        { question: "如何完成覆盖率收敛？", answerOutline: "解释计划、缺口和回归", evidence: ["完成覆盖率收敛"] },
-        { question: "为什么选择本岗位？", answerOutline: "连接微电子背景与验证经历", evidence: ["微电子"] },
+        { question: "如何搭建 UVM 环境？", focus: "从组件和 phase 说明", factIds: [confirmed.id] },
+        { question: "如何完成覆盖率收敛？", focus: "解释计划、缺口和回归", factIds: [confirmed.id] },
+        { question: "为什么选择本岗位？", focus: "连接专业与验证经历", factIds: [confirmed.id] },
       ],
       gaps: ["尚无形式验证事实"],
     }));
@@ -49,5 +49,23 @@ describe("application routes", () => {
     const events = await app.inject({ method: "GET", url: `/api/applications/${applicationId}/events` });
     expect(events.json()).toHaveLength(2);
     expect(generate.mock.calls[0]?.[0].prompt).not.toContain("unconfirmed-secret");
+  });
+
+  it("rejects AI material output that cites an unknown fact id", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-application-api-")); roots.push(root);
+    const storage = await openDatabase({ dataRoot: root }); storages.push(storage);
+    const jobs = new JobRepository(storage.db); const profiles = new ProfileRepository(storage.db); const facts = new FactRepository(storage.db); const repository = new ApplicationRepository(storage.db);
+    profiles.saveProfile({ displayName: "Ray", email: "", phone: "", currentCity: "", degree: "本科", major: "微电子", graduationDate: "2027-06" });
+    facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm", content: { type: "skill", name: "UVM", category: "验证", evidence: "项目" } });
+    const job = jobs.upsert({ source: "manual", sourceJobId: "2", sourceUrl: "https://careers.example.com/2", title: "验证工程师", company: "示例", location: "", description: "UVM", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
+    const unknown = "018a2c8a-51dc-7a81-a240-999999999999";
+    const generate = vi.fn(async () => ({ selectedFactIds: [unknown], interviewQuestions: [1, 2, 3].map((index) => ({ question: `问题 ${index}`, focus: "只说事实", factIds: [unknown] })), gaps: [] }));
+    const service = new ApplicationsService({ repository, jobs, profiles, facts, provider: { generate } as never, renderResumePdf: async () => Buffer.alloc(0) });
+    const app = buildApp({ applications: service, allowedOrigins: new Set([ORIGIN]) }); apps.push(app);
+    const application = repository.create(job.id);
+    const response = await app.inject({ method: "POST", url: `/api/applications/${application.id}/prepare`, headers: { origin: ORIGIN }, payload: {} });
+    expect(response.statusCode).toBe(502);
+    expect(response.json()).toMatchObject({ error: { code: "ai_output_invalid" } });
+    expect(repository.getPreparation(application.id)).toBeNull();
   });
 });

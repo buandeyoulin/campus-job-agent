@@ -23,6 +23,7 @@ export function CareerOpsWorkspace({ api }: CareerOpsWorkspaceProps) {
       setMatches(nextMatches); setApplications(nextApplications);
     } catch (reason) { setError(messageOf(reason)); }
   }, [api]);
+  const refreshApplications = useCallback(async () => setApplications(await api.listApplications()), [api]);
   useEffect(() => { void load(); }, [load]);
 
   const runAi = async () => {
@@ -54,19 +55,19 @@ export function CareerOpsWorkspace({ api }: CareerOpsWorkspaceProps) {
     </section>
 
     <section className="application-section" aria-labelledby="application-heading"><h3 id="application-heading">求职进度</h3>
-      {applications.length === 0 ? <p className="empty-copy">尚未跟踪岗位。请从推荐岗位中手动加入。</p> : applications.map((detail) => <ApplicationCard key={detail.application.id} detail={detail} api={api} busy={busy} setBusy={setBusy} setError={setError} onChange={(patch) => replaceApplication(detail.application.id, patch)} />)}
+      {applications.length === 0 ? <p className="empty-copy">尚未跟踪岗位。请从推荐岗位中手动加入。</p> : applications.map((detail) => <ApplicationCard key={detail.application.id} detail={detail} api={api} busy={busy} setBusy={setBusy} setError={setError} onChange={(patch) => replaceApplication(detail.application.id, patch)} onRefresh={refreshApplications} />)}
     </section>
   </section>;
 }
 
-function ApplicationCard({ detail, api, busy, setBusy, setError, onChange }: {
-  detail: ApplicationDetail; api: CareerOpsApi; busy: boolean; setBusy(value: boolean): void; setError(value: string): void; onChange(patch: Partial<ApplicationDetail>): void;
+function ApplicationCard({ detail, api, busy, setBusy, setError, onChange, onRefresh }: {
+  detail: ApplicationDetail; api: CareerOpsApi; busy: boolean; setBusy(value: boolean): void; setError(value: string): void; onChange(patch: Partial<ApplicationDetail>): void; onRefresh(): Promise<void>;
 }) {
   const [status, setStatus] = useState<ApplicationStatus>(detail.application.status);
   const [note, setNote] = useState(detail.application.note);
   const save = async () => {
     setBusy(true); setError("");
-    try { onChange({ application: await api.updateApplication(detail.application.id, { status, note }) }); }
+    try { await api.updateApplication(detail.application.id, { status, note }); await onRefresh(); }
     catch (reason) { setError(messageOf(reason)); }
     finally { setBusy(false); }
   };

@@ -9,11 +9,12 @@ import { buildApp } from "../src/app.js";
 import { MatchService } from "../src/matching-service.js";
 
 const roots: string[] = []; const storages: StorageDatabase[] = []; const apps: FastifyInstance[] = [];
+const ORIGIN = "http://127.0.0.1:4318";
 async function setup(provider?: StructuredAiProvider) {
   const root = await mkdtemp(path.join(os.tmpdir(), "campus-job-agent-matches-")); roots.push(root);
   const storage = await openDatabase({ dataRoot: root }); storages.push(storage);
   const profiles = new ProfileRepository(storage.db); const facts = new FactRepository(storage.db); const jobs = new JobRepository(storage.db);
-  const app = buildApp({ matches: new MatchService({ profiles, facts, jobs, ...(provider ? { provider } : {}) }), allowedOrigins: new Set() }); apps.push(app);
+  const app = buildApp({ matches: new MatchService({ profiles, facts, jobs, ...(provider ? { provider } : {}) }), allowedOrigins: new Set([ORIGIN]) }); apps.push(app);
   return { app, profiles, facts, jobs };
 }
 afterEach(async () => { await Promise.all(apps.splice(0).map((app) => app.close())); storages.splice(0).forEach((storage) => storage.close()); await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
@@ -31,21 +32,35 @@ describe("match routes", () => {
   });
 
   it("uses AI to assess ranked jobs from confirmed facts without leaking pending facts", async () => {
+    let confirmedId = "";
     const generate = vi.fn(async (request: { prompt: string }) => [{
-      jobId: request.prompt.match(/[0-9a-f-]{36}/i)?.[0], fitScore: 92, summary: "验证经验与岗位高度匹配",
-      strengths: ["UVM 项目"], gaps: ["形式验证经历尚未确认"],
+      jobId: JSON.parse(request.prompt).jobs[0].id as string, fitScore: 92,
+      strengthFactIds: [confirmedId], gaps: ["形式验证经历尚未确认"],
     }]);
     const { app, profiles, facts, jobs } = await setup({ generate } as never);
     profiles.saveProfile({ displayName: "Ray", email: "", phone: "", currentCity: "上海", degree: "本科", major: "微电子", graduationDate: "2027-06" });
     profiles.savePreferences({ targetRoles: ["数字 IC 验证"], excludedRoles: [], recruitmentTypes: ["campus"], targetCities: ["上海"], remotePreference: "no_preference", availabilityFrom: "", availabilityTo: "", daysPerWeek: null, minimumDurationMonths: null, preferredIndustries: ["半导体"], preferredCompanies: [], companyBlacklist: [] });
-    facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm", content: { type: "skill", name: "UVM", category: "验证", evidence: "搭建验证环境" } });
+    confirmedId = facts.create({ status: "confirmed", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:uvm", content: { type: "skill", name: "UVM", category: "验证", evidence: "搭建验证环境" } }).id;
     facts.create({ status: "pending", source: "manual", resumeUploadId: null, sourceExcerpt: null, duplicateOfFactId: null, fingerprint: "skill:secret", content: { type: "skill", name: "unconfirmed-secret", category: "", evidence: "" } });
     const job = jobs.upsert({ source: "manual", sourceJobId: "ai-1", sourceUrl: "https://careers.example.com/ai-1", title: "数字 IC 验证工程师", company: "示例芯片", location: "上海", description: "负责 UVM 验证", capturedAt: "2026-07-18T10:00:00.000Z" }).job;
 
-    const response = await app.inject({ method: "GET", url: "/api/matches?ai=true" });
+    const blocked = await app.inject({ method: "POST", url: "/api/matches/analyze", headers: { origin: "https://malicious.example" }, payload: {} });
+    expect(blocked.statusCode).toBe(403);
+    const response = await app.inject({ method: "POST", url: "/api/matches/analyze", headers: { origin: ORIGIN }, payload: {} });
     expect(response.json()).toMatchObject([{ job: { id: job.id }, aiAssessment: { fitScore: 92 }, score: 85 }]);
     expect(generate).toHaveBeenCalledOnce();
     expect(generate.mock.calls[0]?.[0].prompt).toContain("UVM");
     expect(generate.mock.calls[0]?.[0].prompt).not.toContain("unconfirmed-secret");
+  });
+
+  it("refuses AI matching when there are no confirmed facts", async () => {
+    const generate = vi.fn();
+    const { app, profiles, jobs } = await setup({ generate } as never);
+    profiles.saveProfile({ displayName: "Ray", email: "", phone: "", currentCity: "上海", degree: "本科", major: "微电子", graduationDate: "2027-06" });
+    profiles.savePreferences({ targetRoles: ["验证"], excludedRoles: [], recruitmentTypes: ["campus"], targetCities: [], remotePreference: "no_preference", availabilityFrom: "", availabilityTo: "", daysPerWeek: null, minimumDurationMonths: null, preferredIndustries: [], preferredCompanies: [], companyBlacklist: [] });
+    jobs.upsert({ source: "manual", sourceJobId: "empty-facts", sourceUrl: "https://careers.example.com/empty", title: "验证工程师", company: "示例", location: "", description: "UVM", capturedAt: "2026-07-18T10:00:00.000Z" });
+    const response = await app.inject({ method: "POST", url: "/api/matches/analyze", headers: { origin: ORIGIN }, payload: {} });
+    expect(response.statusCode).toBe(409);
+    expect(generate).not.toHaveBeenCalled();
   });
 });
