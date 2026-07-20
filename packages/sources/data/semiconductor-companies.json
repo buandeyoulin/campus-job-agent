@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "companies": [
+    {
+      "canonicalName": "紫光展锐",
+      "aliases": ["UNISOC"],
+      "officialDomain": "unisoc.com",
+      "industries": ["chip_design", "wireless_semiconductor"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.unisoc.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.unisoc.com/cn/about/join-us", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.unisoc.com/cn/about/join-us", "detail": "Official join-us page" }] }]
+    },
+    {
+      "canonicalName": "寒武纪",
+      "aliases": ["Cambricon"],
+      "officialDomain": "cambricon.com",
+      "industries": ["ai_chip", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.cambricon.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://joinus.cambricon.com/apply/cambricon/1113", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.cambricon.com/", "detail": "Official site publishes the joinus.cambricon.com resume address" }] }]
+    },
+    {
+      "canonicalName": "海光信息",
+      "aliases": ["Hygon"],
+      "officialDomain": "hygon.cn",
+      "industries": ["cpu", "gpu", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.hygon.cn/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.hygon.cn/", "kind": "html", "adapter": "unclassified", "evidence": [{ "kind": "career_semantics", "url": "https://www.hygon.cn/", "detail": "Official SPA entry retained for same-domain recruitment classification" }] }]
+    },
+    {
+      "canonicalName": "龙芯中科",
+      "aliases": ["Loongson"],
+      "officialDomain": "loongson.cn",
+      "industries": ["cpu", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.loongson.cn/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.loongson.cn/index.php/application/list?id=43", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.loongson.cn/", "detail": "Official homepage join-us navigation" }] }]
+    },
+    {
+      "canonicalName": "兆易创新",
+      "aliases": ["GigaDevice"],
+      "officialDomain": "gigadevice.com.cn",
+      "industries": ["memory", "mcu", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.gigadevice.com.cn/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.gigadevice.com.cn/about/career", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.gigadevice.com.cn/about/career", "detail": "Official careers page" }] }]
+    },
+    {
+      "canonicalName": "澜起科技",
+      "aliases": ["Montage Technology"],
+      "officialDomain": "montage-tech.com",
+      "industries": ["memory_interface", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.montage-tech.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.montage-tech.com/cn/Campus_Recruitment", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.montage-tech.com/", "detail": "Official campus recruitment page" }] }]
+    },
+    {
+      "canonicalName": "芯原股份",
+      "aliases": ["VeriSilicon"],
+      "officialDomain": "verisilicon.com",
+      "industries": ["chip_ip", "chip_design_service"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.verisilicon.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.verisilicon.com/recruit/RecruitCampus.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.verisilicon.com/recruit/RecruitCampus.html", "detail": "Official campus recruitment page" }] }]
+    },
+    {
+      "canonicalName": "瑞芯微",
+      "aliases": ["Rockchip"],
+      "officialDomain": "rock-chips.com",
+      "industries": ["soc", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.rock-chips.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.rock-chips.com/a/cn/jobs/xiaoyuanzhaopin/index.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.rock-chips.com/", "detail": "Official campus recruitment page" }] }]
+    },
+    {
+      "canonicalName": "全志科技",
+      "aliases": ["Allwinner Technology"],
+      "officialDomain": "allwinnertech.com",
+      "industries": ["soc", "chip_design"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.allwinnertech.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.allwinnertech.com/index.php?a=index&c=banner", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "career_semantics", "url": "https://www.allwinnertech.com/index.php?a=index&c=banner", "detail": "Official site exposes campus and social recruitment navigation" }] }]
+    },
+    {
+      "canonicalName": "地平线",
+      "aliases": ["Horizon Robotics"],
+      "officialDomain": "horizon.auto",
+      "industries": ["automotive_chip", "ai_chip"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.horizon.auto/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://wecruit.hotjob.cn/SU64819a4f2f9d2433ba8b043a/pb/social.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "official_ats_link", "url": "https://www.horizon.auto/about", "detail": "Official about page links directly to this recruitment tenant" }] }]
+    },
+    {
+      "canonicalName": "黑芝麻智能",
+      "aliases": ["Black Sesame Technologies"],
+      "officialDomain": "blacksesame.com.cn",
+      "industries": ["automotive_chip", "ai_chip"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.blacksesame.com.cn/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.blacksesame.com.cn/en/join-us/", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.blacksesame.com.cn/", "detail": "Official join-us page with open positions" }] }]
+    },
+    {
+      "canonicalName": "长江存储",
+      "aliases": ["YMTC"],
+      "officialDomain": "ymtc.com",
+      "industries": ["nand_flash", "semiconductor_manufacturing"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.ymtc.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.ymtc.com/cn/joinus.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.ymtc.com/", "detail": "Official join-us page links to current recruitment tenants" }] }]
+    },
+    {
+      "canonicalName": "长鑫存储",
+      "aliases": ["CXMT"],
+      "officialDomain": "cxmt.com",
+      "industries": ["dram", "semiconductor_manufacturing"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.cxmt.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.cxmt.com/join.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.cxmt.com/", "detail": "Official join-us page" }] }]
+    },
+    {
+      "canonicalName": "中芯国际",
+      "aliases": ["SMIC"],
+      "officialDomain": "smics.com",
+      "industries": ["semiconductor_foundry", "semiconductor_manufacturing"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.smics.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.smics.com/tc/site/human", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.smics.com/", "detail": "Official human-resources page" }] }]
+    },
+    {
+      "canonicalName": "华虹半导体",
+      "aliases": ["Hua Hong Semiconductor"],
+      "officialDomain": "huahong.com.cn",
+      "industries": ["semiconductor_foundry", "semiconductor_manufacturing"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.huahong.com.cn/", "detail": "Official Hua Hong group homepage" }],
+      "careerSources": [{ "url": "https://www.huahong.com.cn/?id=44&m=channel", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.huahong.com.cn/", "detail": "Official group recruitment channel includes the semiconductor subsidiary" }] }]
+    },
+    {
+      "canonicalName": "北方华创",
+      "aliases": ["NAURA"],
+      "officialDomain": "naura.com",
+      "industries": ["semiconductor_equipment"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.naura.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.naura.com/join/index.html", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.naura.com/", "detail": "Official join-us page" }] }]
+    },
+    {
+      "canonicalName": "中微公司",
+      "aliases": ["AMEC"],
+      "officialDomain": "amec-inc.com",
+      "industries": ["semiconductor_equipment"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.amec-inc.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.amec-inc.com/", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "career_semantics", "url": "https://www.amec-inc.com/", "detail": "Official corporate site is the maintained recruitment entry pending dedicated-page classification" }] }]
+    },
+    {
+      "canonicalName": "华大九天",
+      "aliases": ["Empyrean Technology"],
+      "officialDomain": "empyrean.com.cn",
+      "industries": ["eda"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.empyrean.com.cn/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.empyrean.com.cn/article/job-list.html", "kind": "html", "adapter": "empyrean-careers", "evidence": [{ "kind": "homepage_link", "url": "https://www.empyrean.com.cn/", "detail": "Official recruitment listing" }] }]
+    },
+    {
+      "canonicalName": "国微思尔芯",
+      "aliases": ["S2C"],
+      "officialDomain": "s2ceda.com",
+      "industries": ["eda", "fpga_prototyping"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.s2ceda.com/", "detail": "Official corporate domain" }],
+      "careerSources": [{ "url": "https://www.s2ceda.com/ch/career", "kind": "html", "adapter": "s2c-careers", "evidence": [{ "kind": "homepage_link", "url": "https://www.s2ceda.com/", "detail": "Official join-us page with current recruitment listings" }] }]
+    },
+    {
+      "canonicalName": "壁仞科技",
+      "aliases": ["Biren Technology"],
+      "officialDomain": "birentech.com",
+      "industries": ["gpu", "ai_chip"],
+      "regions": ["中国"],
+      "verificationEvidence": [{ "kind": "official_domain", "url": "https://www.birentech.com/", "detail": "Official corporate homepage" }],
+      "careerSources": [{ "url": "https://www.birentech.com/join/", "kind": "html", "adapter": "generic-html", "evidence": [{ "kind": "homepage_link", "url": "https://www.birentech.com/", "detail": "Official join-us page" }] }]
+    }
+  ]
+}

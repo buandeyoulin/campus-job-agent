@@ -1,0 +1,18 @@
+{
+  "name": "@campus-job-agent/profile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@campus-job-agent/ai-providers": "0.0.0",
+    "@campus-job-agent/contracts": "0.0.0",
+    "mammoth": "1.12.0",
+    "unpdf": "1.6.2",
+    "zod": "4.4.3"
+  }
+}

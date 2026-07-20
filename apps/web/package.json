@@ -1,0 +1,16 @@
+{
+  "name": "@campus-job-agent/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4318",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@campus-job-agent/contracts": "0.0.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  }
+}
